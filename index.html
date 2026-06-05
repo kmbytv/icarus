@@ -261,10 +261,49 @@ document.addEventListener('DOMContentLoaded', async function() {
         letter-spacing: -0.02em !important;
       }
 
-      /* Subtitle under main heading — item 2 */
-      [class*="muted"], [class*="Muted"], [class*="subtitle"], [class*="hint"],
-      [class*="description"], [class*="subheading"], [class*="caption"] {
+      /* ── Colour system override ──────────────────────────────
+         Primary text  : #E8E8F0
+         Secondary text: #8888A0
+         Muted text    : #3A3A4A
+         On-button     : #EFEFEF
+         No blues or purples on text.
+         ─────────────────────────────────────────────────────── */
+
+      /* Subtitle / secondary text */
+      [class*="muted"], [class*="Muted"],
+      [class*="subtitle"], [class*="Subtitle"],
+      [class*="subheading"], [class*="Subheading"],
+      [class*="hint"], [class*="caption"], [class*="Caption"],
+      [class*="description"], [class*="Description"],
+      [class*="secondary"], [class*="Secondary"],
+      [class*="helper"], [class*="Helper"],
+      [class*="meta"], [class*="Meta"],
+      [class*="label"], [class*="Label"],
+      [class*="empty"] p, [class*="empty"] span,
+      p + p, h1 + p, h2 + p, h3 + p {
         color: #6B6B80 !important;
+      }
+
+      /* Neutralise any element whose computed colour is a blue/purple shade.
+         We can't runtime-grep compiled CSS, so we override common utility
+         classes that React apps generate for those hues. */
+      [class*="blue"], [class*="Blue"],
+      [class*="indigo"], [class*="Indigo"],
+      [class*="purple"], [class*="Purple"],
+      [class*="violet"], [class*="Violet"],
+      [class*="primary-text"], [class*="primaryText"],
+      [class*="accent-text"], [class*="accentText"],
+      [class*="link"], [class*="Link"] {
+        color: #8888A0 !important;
+      }
+
+      /* Ensure primary body text never gets a blue/purple */
+      p, span, li, td, th, label, small, strong, em, a {
+        color: inherit;
+      }
+      /* Re-assert safe palette on main text nodes */
+      body, main, [role="main"], [class*="content"], [class*="Content"] {
+        color: #E8E8F0 !important;
       }
 
       /* Main area padding-bottom so input bar never clips — item 4 */
