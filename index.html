@@ -270,15 +270,50 @@
     #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
     /* ── Feed ──────────────────────────────────────────────────── */
-    #feed { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+    #feed {
+      flex: 1; overflow-y: auto; scroll-behavior: smooth;
+      position: relative;
+    }
+    /* 6. Кастомный индикатор прокрутки */
+    #scroll-track {
+      position: absolute; top: 0; right: 0; width: 2px; height: 100%;
+      background: transparent; z-index: 10; pointer-events: none;
+    }
+    #scroll-thumb {
+      position: absolute; right: 0; width: 2px;
+      background: var(--border); border-radius: 2px;
+      transition: opacity 0.3s; opacity: 0;
+    }
+    #feed:hover #scroll-thumb { opacity: 1; }
+
     #feed-inner {
       max-width: 740px; margin: 0 auto;
       padding: 32px 32px 16px;
       display: flex; flex-direction: column; gap: 2px;
     }
 
-    .msg { padding: 18px 0; border-bottom: 1px solid var(--border-soft); }
+    /* 5. Анимация появления сообщений */
+    .msg {
+      padding: 18px 0; border-bottom: 1px solid var(--border-soft);
+      position: relative;
+      animation: msg-in 0.2s ease forwards;
+    }
+    @keyframes msg-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
     .msg:last-child { border-bottom: none; }
+
+    /* 4. Время при hover */
+    .msg-time {
+      position: absolute; right: 0; top: 20px;
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-muted); letter-spacing: 0.04em;
+      opacity: 0; transition: opacity 0.15s;
+      pointer-events: none;
+    }
+    .msg:hover .msg-time { opacity: 1; }
+
     .msg-label {
       font-family: var(--font-mono); font-size: 10px;
       letter-spacing: 0.1em; text-transform: uppercase;
@@ -297,6 +332,23 @@
       background: var(--surface); border: 1px solid var(--border-soft);
       border-radius: var(--radius); padding: 16px 18px;
       box-shadow: var(--shadow-sm);
+    }
+
+    /* 2. Подсветка строк > внутри ответа агента */
+    .msg-line-cmd { color: var(--text-muted); }
+
+    /* 1. Временной разделитель */
+    .time-divider {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0; pointer-events: none;
+    }
+    .time-divider::before, .time-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border-soft);
+    }
+    .time-divider span {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-muted); letter-spacing: 0.08em;
+      white-space: nowrap;
     }
 
     /* Cursor */
@@ -369,7 +421,12 @@
     #send-btn.ready { background: var(--accent); border-color: var(--accent); color: var(--bg); }
     #send-btn.ready:hover { background: #BBBBBB; border-color: #BBBBBB; }
     #send-btn svg { width: 14px; height: 14px; }
-    #input-hint { font-size: 11px; color: var(--text-muted); padding: 0 16px 8px; opacity: 0.4; }
+    #input-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 16px 8px;
+    }
+    #input-hint { font-size: 11px; color: var(--text-muted); opacity: 0.4; }
+    #char-count { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); opacity: 0.4; letter-spacing: 0.04em; }
 
     /* ── Mobile ────────────────────────────────────────────────── */
     @media (max-width: 640px) {
@@ -517,6 +574,7 @@
     <!-- Main -->
     <div id="main">
       <div id="feed">
+        <div id="scroll-track"><div id="scroll-thumb"></div></div>
         <div id="feed-inner">
           <div id="empty">
             <div id="empty-icon">
@@ -541,7 +599,10 @@
               </svg>
             </button>
           </div>
-          <div id="input-hint">Enter to send · Shift+Enter for new line</div>
+          <div id="input-footer">
+            <div id="input-hint">Enter to send · Shift+Enter for new line</div>
+            <div id="char-count">0</div>
+          </div>
         </div>
       </div>
     </div>
@@ -550,8 +611,9 @@
 
 <script>
   const startTime = Date.now();
-  let isThinking = false;
-  let msgCount   = 0;
+  let isThinking  = false;
+  let msgCount    = 0;
+  let lastMsgTime = null; // for time dividers
 
   // ── Clock & uptime ──────────────────────────────────────────
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -611,13 +673,39 @@
 
   function updateMsgCount() {}
 
+  function nowStr() {
+    const n = new Date();
+    return `${pad(n.getHours())}:${pad(n.getMinutes())}`;
+  }
+
+  function maybeAddDivider(wrap) {
+    const now = Date.now();
+    // Add divider if first message or >2 min since last
+    if (!lastMsgTime || now - lastMsgTime > 120000) {
+      const div = document.createElement('div');
+      div.className = 'time-divider';
+      const sp = document.createElement('span');
+      sp.textContent = nowStr();
+      div.appendChild(sp);
+      wrap.appendChild(div);
+    }
+    lastMsgTime = now;
+  }
+
   function addMessage(role, text) {
     document.getElementById('empty')?.remove();
     const wrap = document.getElementById('feed-inner');
-    const msg  = document.createElement('div');
+    maybeAddDivider(wrap);
+
+    const msg = document.createElement('div');
     msg.className = `msg from-${role}`;
     msg.id = `msg-${++msgCount}`;
     updateMsgCount();
+
+    // 4. Time on hover
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = nowStr();
 
     const label = document.createElement('div');
     label.className = 'msg-label';
@@ -630,20 +718,27 @@
     body.className = 'msg-body';
     body.textContent = text;
 
+    msg.appendChild(time);
     msg.appendChild(label);
     msg.appendChild(body);
     wrap.appendChild(msg);
     scrollToBottom();
+    updateScrollThumb();
     return body;
   }
 
   function addProcessing() {
     document.getElementById('empty')?.remove();
     const wrap = document.getElementById('feed-inner');
-    const msg  = document.createElement('div');
+
+    const msg = document.createElement('div');
     msg.className = 'msg from-agent';
     msg.id = `msg-${++msgCount}`;
     updateMsgCount();
+
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = nowStr();
 
     const label = document.createElement('div');
     label.className = 'msg-label';
@@ -656,10 +751,12 @@
     body.className = 'msg-body';
     body.innerHTML = '<div class="processing"><div class="processing-dots"><span></span><span></span><span></span></div>processing...</div>';
 
+    msg.appendChild(time);
     msg.appendChild(label);
     msg.appendChild(body);
     wrap.appendChild(msg);
     scrollToBottom();
+    updateScrollThumb();
     return { msg, body };
   }
 
@@ -671,13 +768,41 @@
     for (const char of text) {
       cursor.insertAdjacentText('beforebegin', char);
       scrollToBottom();
+      updateScrollThumb();
       await sleep(delay);
     }
     cursor.remove();
+    // 2. После typewrite — подсветить > строки
+    renderAgentBody(el, text);
   }
 
+  function renderAgentBody(el, text) {
+    el.innerHTML = '';
+    for (const line of text.split('\n')) {
+      const span = document.createElement('span');
+      if (line.startsWith('>')) {
+        span.className = 'msg-line-cmd';
+      }
+      span.textContent = line;
+      el.appendChild(span);
+      el.appendChild(document.createTextNode('\n'));
+    }
+  }
+
+  // 6. Scroll thumb
+  function updateScrollThumb() {
+    const feed  = document.getElementById('feed');
+    const thumb = document.getElementById('scroll-thumb');
+    if (!feed || !thumb) return;
+    const ratio  = feed.clientHeight / feed.scrollHeight;
+    const top    = (feed.scrollTop / feed.scrollHeight) * feed.clientHeight;
+    thumb.style.height = Math.max(ratio * feed.clientHeight, 24) + 'px';
+    thumb.style.top    = top + 'px';
+  }
+  document.getElementById('feed').addEventListener('scroll', updateScrollThumb);
+
   function clearFeed() {
-    msgCount = 0; updateMsgCount();
+    msgCount = 0; lastMsgTime = null; updateMsgCount();
     const wrap = document.getElementById('feed-inner');
     wrap.innerHTML = `
       <div id="empty">
@@ -695,6 +820,8 @@
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
     sendBtn.classList.toggle('ready', input.value.trim().length > 0);
+    // 3. Счётчик символов
+    document.getElementById('char-count').textContent = input.value.length || '';
   });
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
