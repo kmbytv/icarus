@@ -401,6 +401,7 @@
     /* ── Tab panels ────────────────────────────────────────────── */
     #tab-chat    { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     #tab-context { flex: 1; display: flex; flex-direction: column; overflow: hidden; display: none; }
+    #tab-code    { flex: 1; display: none; overflow: hidden; }
 
     /* Context panel */
     #context-inner {
@@ -424,6 +425,265 @@
     #system-prompt-area:focus { border-color: var(--accent-dim); }
     #system-prompt-area::placeholder { color: var(--text-muted); }
     #context-meta { margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+
+    /* ── Code tab — split panel ────────────────────────────────── */
+    #code-split {
+      display: flex; height: 100%;
+    }
+
+    /* Left: conversation */
+    #code-left {
+      width: 340px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--surface-side);
+    }
+    #code-left-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid var(--border-soft);
+      flex-shrink: 0;
+    }
+    #code-left-title {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+    }
+    #code-session-label {
+      font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);
+      opacity: 0.5;
+    }
+    #code-feed {
+      flex: 1; overflow-y: auto; padding: 16px 14px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    /* Code messages */
+    .cmsg {
+      display: flex; flex-direction: column; gap: 4px;
+      animation: cmsg-in 0.25s cubic-bezier(0.34,1.4,0.64,1) both;
+    }
+    @keyframes cmsg-in {
+      from { opacity: 0; transform: translateX(-10px) scale(0.97); }
+      to   { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    .cmsg.from-agent { animation-name: cmsg-agent-in; }
+    @keyframes cmsg-agent-in {
+      from { opacity: 0; filter: blur(4px); transform: translateY(4px); }
+      to   { opacity: 1; filter: blur(0); transform: translateY(0); }
+    }
+    .cmsg-meta {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 9px;
+      color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .cmsg-meta-dot {
+      width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.5;
+    }
+    .cmsg-bubble {
+      font-size: 13px; line-height: 1.7; color: var(--text-primary);
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .cmsg.from-user .cmsg-bubble {
+      background: var(--surface-raise);
+      border: 1px solid var(--border);
+      border-radius: 10px 10px 4px 10px;
+      padding: 9px 12px; font-size: 13px;
+    }
+    .cmsg.from-agent .cmsg-bubble {
+      font-family: var(--font-mono); font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Tool event rows */
+    .ctool {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-muted); padding: 4px 0;
+      animation: ctool-in 0.2s ease both;
+    }
+    @keyframes ctool-in {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .ctool-icon {
+      width: 18px; height: 18px; border-radius: 5px;
+      background: var(--surface-raise); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ctool-icon svg { width: 9px; height: 9px; color: var(--warn); }
+    .ctool-name { color: var(--warn); }
+    .ctool-detail { color: var(--text-muted); opacity: 0.6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+
+    /* Thinking row */
+    .cthink {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);
+      padding: 2px 0; opacity: 0.65;
+    }
+    .cthink-dots { display: flex; gap: 3px; }
+    .cthink-dots span {
+      width: 3px; height: 3px; border-radius: 50%; background: var(--accent);
+      animation: bdot 1.4s ease-in-out infinite;
+    }
+    .cthink-dots span:nth-child(2) { animation-delay: 0.18s; }
+    .cthink-dots span:nth-child(3) { animation-delay: 0.36s; }
+
+    /* Code input */
+    #code-input-wrap {
+      flex-shrink: 0; padding: 10px 12px 14px;
+      border-top: 1px solid var(--border-soft);
+    }
+    /* Rotating conic border when focused */
+    #code-input-outer {
+      position: relative; border-radius: 14px;
+      padding: 1.5px;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+    #code-input-outer::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 14px;
+      background: conic-gradient(from var(--conic-angle, 0deg),
+        transparent 0deg, transparent 200deg,
+        rgba(180,180,180,0.6) 240deg, transparent 280deg);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #code-input-outer.focused::before {
+      opacity: 1;
+      animation: spin-border 2.5s linear infinite;
+    }
+    @property --conic-angle {
+      syntax: '<angle>'; initial-value: 0deg; inherits: false;
+    }
+    @keyframes spin-border {
+      to { --conic-angle: 360deg; }
+    }
+    #code-input-inner {
+      position: relative; border-radius: 13px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    #code-input {
+      width: 100%; min-height: 36px; max-height: 90px;
+      background: transparent; outline: none; resize: none;
+      border: none; padding: 10px 44px 10px 12px;
+      font-family: var(--font-ui); font-size: 13px;
+      color: var(--text-primary); line-height: 1.5;
+      overflow-y: auto;
+    }
+    #code-input::placeholder { color: var(--text-muted); }
+    #code-send-btn {
+      position: absolute; right: 6px; bottom: 6px;
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-muted); transition: all 0.18s;
+    }
+    #code-send-btn.ready {
+      background: var(--accent); border-color: transparent; color: var(--bg);
+      box-shadow: 0 2px 10px rgba(153,153,153,0.2);
+    }
+    #code-send-btn svg { width: 12px; height: 12px; }
+
+    /* Right: code output */
+    #code-right {
+      flex: 1; display: flex; flex-direction: column;
+      background: var(--bg); overflow: hidden; position: relative;
+    }
+    #code-right-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 20px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #code-right-tabs {
+      display: flex; gap: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 2px; gap: 2px;
+    }
+    .cr-tab {
+      font-size: 11px; font-weight: 500; padding: 4px 12px;
+      border-radius: 4px; color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .cr-tab.active { background: var(--surface-raise); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+    #code-right-actions { display: flex; gap: 6px; }
+    .cr-action {
+      font-size: 11px; font-weight: 500; padding: 4px 12px;
+      border-radius: 5px; border: 1px solid var(--border);
+      color: var(--text-secondary); background: var(--surface);
+      transition: all 0.15s;
+    }
+    .cr-action:hover { border-color: var(--accent-dim); color: var(--text-primary); }
+    .cr-action.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+    .cr-action.primary:hover { background: #bbb; }
+
+    /* Output area */
+    #code-output {
+      flex: 1; overflow-y: auto; padding: 24px 24px;
+      position: relative;
+    }
+    #code-output pre {
+      font-family: var(--font-mono); font-size: 12.5px; line-height: 1.8;
+      color: var(--text-secondary); white-space: pre-wrap; word-break: break-all;
+    }
+    /* Syntax tinting — very lightweight, no lib needed */
+    #code-output .tok-kw  { color: #c792ea; }
+    #code-output .tok-str { color: #c3e88d; }
+    #code-output .tok-num { color: #f78c6c; }
+    #code-output .tok-cmt { color: var(--text-muted); font-style: italic; }
+    #code-output .tok-fn  { color: #82aaff; }
+
+    /* Empty output */
+    #code-output-empty {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; pointer-events: none;
+    }
+
+    /* Generating orb */
+    #gen-orb-wrap { position: relative; width: 80px; height: 80px; }
+    #gen-orb {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%,
+        rgba(200,169,110,0.9), rgba(180,80,40,0.7) 55%, rgba(100,40,20,0.3) 100%);
+      filter: blur(6px);
+      animation: orb-idle 3s ease-in-out infinite;
+    }
+    #gen-orb.active {
+      animation: orb-think 1.8s ease-in-out infinite;
+    }
+    @keyframes orb-idle {
+      0%,100% { transform: scale(1);    filter: blur(6px); opacity: 0.55; }
+      50%      { transform: scale(1.06); filter: blur(8px); opacity: 0.7; }
+    }
+    @keyframes orb-think {
+      0%   { transform: scale(0.92) rotate(0deg);   filter: blur(4px);  opacity: 0.8; }
+      33%  { transform: scale(1.12) rotate(60deg);  filter: blur(10px); opacity: 1; }
+      66%  { transform: scale(0.96) rotate(120deg); filter: blur(6px);  opacity: 0.9; }
+      100% { transform: scale(0.92) rotate(180deg); filter: blur(4px);  opacity: 0.8; }
+    }
+    #gen-orb-ring {
+      position: absolute; inset: -8px;
+      border-radius: 50%;
+      border: 1px solid rgba(200,169,110,0.15);
+      animation: ring-pulse 2s ease-in-out infinite;
+    }
+    @keyframes ring-pulse {
+      0%,100% { transform: scale(1);    opacity: 0.3; }
+      50%      { transform: scale(1.15); opacity: 0.0; }
+    }
+    #gen-status {
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-muted); letter-spacing: 0.06em;
+      text-align: center;
+    }
+    #gen-status-sub {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-muted); opacity: 0.4;
+      text-align: center; margin-top: 2px;
+    }
 
     /* ── Feed ──────────────────────────────────────────────────── */
     #feed {
@@ -883,6 +1143,10 @@
             Context
             <span class="tab-shortcut">⌘2</span>
           </button>
+          <button class="tab-btn" id="tab-code-btn" onclick="switchTab('code')">
+            Code
+            <span class="tab-shortcut">⌘3</span>
+          </button>
         </div>
       </div>
 
@@ -927,6 +1191,60 @@
             </div>
             <div id="char-count"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Code tab -->
+      <div id="tab-code">
+        <div id="code-split">
+
+          <!-- Left: agent conversation -->
+          <div id="code-left">
+            <div id="code-left-header">
+              <span id="code-left-title">Agent</span>
+              <span id="code-session-label">session · main</span>
+            </div>
+            <div id="code-feed"></div>
+            <div id="code-input-wrap">
+              <div id="code-input-outer">
+                <div id="code-input-inner">
+                  <textarea id="code-input" rows="1" placeholder="Ask KAI to write or run code…"></textarea>
+                  <button id="code-send-btn" onclick="handleCodeSend()" aria-label="Send">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: output / preview -->
+          <div id="code-right">
+            <div id="code-right-header">
+              <div id="code-right-tabs">
+                <button class="cr-tab active" id="crt-output" onclick="switchCodePane('output')">Output</button>
+                <button class="cr-tab" id="crt-source" onclick="switchCodePane('source')">Source</button>
+              </div>
+              <div id="code-right-actions">
+                <button class="cr-action" id="cr-copy" onclick="copyCode()">Copy</button>
+                <button class="cr-action" id="cr-run" onclick="runLastCode()">Run ▶</button>
+                <button class="cr-action primary" id="cr-clear-code" onclick="clearCodeTab()">Clear</button>
+              </div>
+            </div>
+            <div id="code-output">
+              <div id="code-output-empty">
+                <div id="gen-orb-wrap">
+                  <div id="gen-orb"></div>
+                  <div id="gen-orb-ring"></div>
+                </div>
+                <div id="gen-status">Waiting for input</div>
+                <div id="gen-status-sub">Ask KAI to write or execute code</div>
+              </div>
+              <pre id="code-pre" style="display:none"></pre>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1036,11 +1354,233 @@
 
   // ── Tabs ─────────────────────────────────────────────────────
   function switchTab(tab) {
-    const isChat = tab === 'chat';
-    document.getElementById('tab-chat-btn').classList.toggle('active', isChat);
-    document.getElementById('tab-context-btn').classList.toggle('active', !isChat);
-    document.getElementById('tab-chat').style.display    = isChat ? 'flex' : 'none';
-    document.getElementById('tab-context').style.display = isChat ? 'none' : 'flex';
+    ['chat','context','code'].forEach(t => {
+      const btn   = document.getElementById(`tab-${t}-btn`);
+      const panel = document.getElementById(`tab-${t}`);
+      if (!btn || !panel) return;
+      const active = t === tab;
+      btn.classList.toggle('active', active);
+      panel.style.display = active ? (t === 'code' ? 'block' : 'flex') : 'none';
+    });
+  }
+
+  // ── Code tab ─────────────────────────────────────────────────
+  let codeIsThinking = false;
+  let lastCodeBlock  = '';   // last code block extracted from agent reply
+  let codePane       = 'output';
+
+  const codeInput   = document.getElementById('code-input');
+  const codeSendBtn = document.getElementById('code-send-btn');
+  const codeOuter   = document.getElementById('code-input-outer');
+
+  codeInput.addEventListener('focus',  () => codeOuter.classList.add('focused'));
+  codeInput.addEventListener('blur',   () => codeOuter.classList.remove('focused'));
+  codeInput.addEventListener('input',  () => {
+    codeSendBtn.classList.toggle('ready', codeInput.value.trim().length > 0);
+    codeInput.style.height = 'auto';
+    codeInput.style.height = Math.min(codeInput.scrollHeight, 90) + 'px';
+  });
+  codeInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCodeSend(); }
+  });
+
+  function handleCodeSend() {
+    const text = codeInput.value.trim();
+    if (!text || codeIsThinking) return;
+    codeInput.value = '';
+    codeInput.style.height = 'auto';
+    codeSendBtn.classList.remove('ready');
+    addCodeMsg('user', text);
+    sendToCodeAgent(text);
+  }
+
+  function addCodeMsg(role, text) {
+    const feed = document.getElementById('code-feed');
+    const wrap = document.createElement('div');
+    wrap.className = `cmsg from-${role}`;
+
+    const meta = document.createElement('div');
+    meta.className = 'cmsg-meta';
+    const dot = document.createElement('span');
+    dot.className = 'cmsg-meta-dot';
+    meta.appendChild(dot);
+    meta.append(role === 'user' ? 'YOU' : 'KAI');
+
+    const bubble = document.createElement('div');
+    bubble.className = 'cmsg-bubble';
+    bubble.textContent = text;
+
+    wrap.appendChild(meta);
+    wrap.appendChild(bubble);
+    feed.appendChild(wrap);
+    feed.scrollTop = feed.scrollHeight;
+    return bubble;
+  }
+
+  function addCodeTool(toolName, detail) {
+    const feed = document.getElementById('code-feed');
+    const row = document.createElement('div');
+    row.className = 'ctool';
+    row.innerHTML = `
+      <div class="ctool-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </svg>
+      </div>
+      <span class="ctool-name">${toolName}</span>
+      <span class="ctool-detail">${detail ?? ''}</span>`;
+    feed.appendChild(row);
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function setCodeStatus(thinking, label = '') {
+    codeIsThinking = thinking;
+    const orb       = document.getElementById('gen-orb');
+    const status    = document.getElementById('gen-status');
+    const statusSub = document.getElementById('gen-status-sub');
+    orb.classList.toggle('active', thinking);
+    if (thinking) {
+      status.textContent    = label || 'Generating…';
+      statusSub.textContent = 'Thinking…';
+    } else {
+      status.textContent    = lastCodeBlock ? 'Done' : 'Waiting for input';
+      statusSub.textContent = lastCodeBlock ? 'Code ready' : 'Ask KAI to write or execute code';
+    }
+  }
+
+  // Cycle status messages while thinking
+  const statusCycle = ['Analyzing…', 'Planning…', 'Generating…', 'Writing code…', 'Almost there…'];
+  let statusIdx = 0, statusTimer = null;
+  function startStatusCycle() {
+    statusIdx = 0;
+    statusTimer = setInterval(() => {
+      document.getElementById('gen-status').textContent = statusCycle[statusIdx % statusCycle.length];
+      statusIdx++;
+    }, 1800);
+  }
+  function stopStatusCycle() { clearInterval(statusTimer); }
+
+  function showCodeOutput(code) {
+    const empty = document.getElementById('code-output-empty');
+    const pre   = document.getElementById('code-pre');
+    empty.style.display = 'none';
+    pre.style.display   = 'block';
+    pre.textContent     = code;
+    lastCodeBlock       = code;
+  }
+
+  function switchCodePane(pane) {
+    codePane = pane;
+    document.getElementById('crt-output').classList.toggle('active', pane === 'output');
+    document.getElementById('crt-source').classList.toggle('active', pane === 'source');
+  }
+
+  function copyCode() {
+    if (!lastCodeBlock) return;
+    navigator.clipboard?.writeText(lastCodeBlock);
+    const btn = document.getElementById('cr-copy');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  }
+
+  function runLastCode() {
+    if (!lastCodeBlock) return;
+    addCodeMsg('user', '> run last code block');
+    sendToCodeAgent('Run the last code block you wrote and show the output.');
+  }
+
+  function clearCodeTab() {
+    document.getElementById('code-feed').innerHTML = '';
+    const empty = document.getElementById('code-output-empty');
+    const pre   = document.getElementById('code-pre');
+    empty.style.display = 'flex';
+    pre.style.display   = 'none';
+    pre.textContent     = '';
+    lastCodeBlock       = '';
+    setCodeStatus(false);
+  }
+
+  // Extract fenced code blocks from agent text
+  function extractCodeBlock(text) {
+    const m = text.match(/```(?:\w+)?\n([\s\S]*?)```/);
+    return m ? m[1].trim() : null;
+  }
+
+  async function sendToCodeAgent(userText) {
+    setCodeStatus(true, 'Generating…');
+    startStatusCycle();
+
+    const feed = document.getElementById('code-feed');
+
+    // Thinking row
+    const thinkRow = document.createElement('div');
+    thinkRow.className = 'cthink';
+    thinkRow.innerHTML = `<div class="cthink-dots"><span></span><span></span><span></span></div><span id="cthink-label">thinking</span>`;
+    feed.appendChild(thinkRow);
+    feed.scrollTop = feed.scrollHeight;
+
+    let accumulated = '';
+    const agentBubble = addCodeMsg('agent', '');
+    // Move agent bubble after thinking row visually (already appended)
+
+    try {
+      const sysPrompt = document.getElementById('system-prompt-area').value.trim();
+      const res = await fetch(`${BACKEND}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText, sessionId: 'code', systemPrompt: sysPrompt }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let   buf     = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let ev;
+          try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (ev.type === 'delta') {
+            accumulated += ev.text;
+            agentBubble.textContent = accumulated;
+            feed.scrollTop = feed.scrollHeight;
+            // Update thinking label with partial text snippet
+            const lbl = document.getElementById('cthink-label');
+            if (lbl) lbl.textContent = accumulated.slice(-30).replace(/\n/g, ' ').trim() || 'thinking';
+          } else if (ev.type === 'tool_call') {
+            addCodeTool(ev.tool, JSON.stringify(ev.args).slice(0, 60));
+          } else if (ev.type === 'tool_result') {
+            const resultStr = ev.result?.output ?? ev.result?.content ?? ev.result?.error ?? '';
+            if (resultStr) showCodeOutput(resultStr);
+          } else if (ev.type === 'error') {
+            throw new Error(ev.message);
+          } else if (ev.type === 'done') {
+            break;
+          }
+        }
+      }
+
+      // Try to extract a code block and display it
+      const block = extractCodeBlock(accumulated);
+      if (block) showCodeOutput(block);
+
+    } catch (err) {
+      agentBubble.textContent = `Error: ${err.message}`;
+    } finally {
+      thinkRow.remove();
+      stopStatusCycle();
+      setCodeStatus(false);
+      feed.scrollTop = feed.scrollHeight;
+    }
   }
 
   // ── Progress bar ────────────────────────────────────────────
@@ -1264,6 +1804,7 @@
     }
     if ((e.metaKey || e.ctrlKey) && e.key === '1') { e.preventDefault(); switchTab('chat'); }
     if ((e.metaKey || e.ctrlKey) && e.key === '2') { e.preventDefault(); switchTab('context'); }
+    if ((e.metaKey || e.ctrlKey) && e.key === '3') { e.preventDefault(); switchTab('code'); }
   });
 
   // ── Send ─────────────────────────────────────────────────────
