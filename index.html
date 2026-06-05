@@ -403,7 +403,20 @@
       font-size: 9px; letter-spacing: 0.12em;
       text-transform: uppercase; color: var(--text-muted);
       padding: 10px 16px 0;
+      transition: color 0.2s;
     }
+    #input-card.typing #input-label { color: var(--accent); }
+    #input-label .label-cursor {
+      display: inline-block;
+      width: 5px; height: 0.85em;
+      background: var(--accent);
+      vertical-align: text-bottom;
+      margin-left: 2px;
+      animation: blink 0.7s step-end infinite;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    #input-card.typing #input-label .label-cursor { opacity: 1; }
     #input-row { display: flex; align-items: flex-end; gap: 8px; padding: 6px 10px 10px 16px; }
     #input {
       flex: 1; min-height: 22px; max-height: 120px;
@@ -590,7 +603,7 @@
 
       <div id="input-bar">
         <div id="input-card">
-          <span id="input-label">Message</span>
+          <span id="input-label"><span id="label-text">Message</span><span class="label-cursor"></span></span>
           <div id="input-row">
             <textarea id="input" rows="1" placeholder="Type here..." spellcheck="false"></textarea>
             <button id="send-btn" onclick="handleSend()" aria-label="Send">
@@ -816,12 +829,24 @@
   const input   = document.getElementById('input');
   const sendBtn = document.getElementById('send-btn');
 
+  const inputCard  = document.getElementById('input-card');
+  const labelText  = document.getElementById('label-text');
+  let typingTimer  = null;
+
   input.addEventListener('input', () => {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
     sendBtn.classList.toggle('ready', input.value.trim().length > 0);
-    // 3. Счётчик символов
     document.getElementById('char-count').textContent = input.value.length || '';
+
+    // 3. Typing label animation
+    inputCard.classList.add('typing');
+    labelText.textContent = 'Typing';
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      inputCard.classList.remove('typing');
+      labelText.textContent = 'Message';
+    }, 1000);
   });
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
