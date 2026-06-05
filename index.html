@@ -308,6 +308,24 @@ document.addEventListener('DOMContentLoaded', async function() {
         fill: #EFEFEF !important;
       }
 
+      /* Active / selected / hover states — kill all blue/purple backgrounds */
+      [class*="active"], [class*="Active"],
+      [class*="selected"], [class*="Selected"],
+      [class*="current"], [class*="Current"],
+      [aria-selected="true"], [aria-current],
+      [class*="nav-item"][class*="active"],
+      [class*="navItem"][class*="active"] {
+        background: #16161E !important;
+        color: #E8E8F0 !important;
+      }
+
+      /* Header/workspace row at top of sidebar */
+      [class*="workspace"], [class*="Workspace"],
+      [class*="header"] > *, [class*="Header"] > *,
+      aside > *:first-child, nav > *:first-child {
+        background: transparent !important;
+      }
+
       /* Avatar/logo square — keep it dark neutral */
       [class*="avatar"], [class*="Avatar"],
       [class*="logo"], [class*="Logo"],
