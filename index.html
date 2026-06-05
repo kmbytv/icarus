@@ -725,67 +725,96 @@
     #feed:hover #scroll-thumb { opacity: 1; }
 
     #feed-inner {
-      max-width: 740px; margin: 0 auto;
-      padding: 32px 32px 16px;
-      display: flex; flex-direction: column; gap: 2px;
+      max-width: 720px; margin: 0 auto;
+      padding: 40px 32px 16px;
+      display: flex; flex-direction: column; gap: 0;
     }
 
-    .msg {
-      padding: 18px 0; border-bottom: 1px solid var(--border-soft);
-      position: relative;
-      animation: msg-in 0.2s ease forwards;
+    /* ── Message rows ──────────────────────────────────────────── */
+    .msg-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      animation: msg-in 0.28s cubic-bezier(0.34,1.4,0.64,1) forwards;
+      opacity: 0;
     }
+    .msg-row + .msg-row { margin-top: 6px; }
+    .msg-row.from-agent { flex-direction: row; }
+    .msg-row.from-user  { flex-direction: row-reverse; }
+
+    /* Spacing between agent/user groups */
+    .msg-row.from-agent + .msg-row.from-user,
+    .msg-row.from-user  + .msg-row.from-agent { margin-top: 20px; }
+
     @keyframes msg-in {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(10px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
     }
-    .msg:last-child { border-bottom: none; }
 
-    .msg-time {
-      position: absolute; right: 0; top: 20px;
+    /* Avatar */
+    .msg-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 2px;
+    }
+    .msg-row.from-agent .msg-avatar {
+      background: linear-gradient(135deg, #1e1e2e 0%, #2a2a40 100%);
+      border: 1px solid rgba(168,184,255,0.2);
+      box-shadow: 0 0 0 1px rgba(168,184,255,0.06), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .msg-avatar i { font-size: 13px; color: var(--accent); line-height: 1; }
+    .msg-row.from-user .msg-avatar { display: none; }
+
+    /* Bubble */
+    .msg-bubble {
+      max-width: 72%;
+      padding: 11px 16px 12px;
+      line-height: 1.65;
+      font-size: 14px;
+      word-break: break-word;
+      white-space: pre-wrap;
+      position: relative;
+    }
+    .msg-row.from-agent .msg-bubble {
+      background: var(--surface-raise);
+      border: 1px solid var(--border-soft);
+      border-bottom-left-radius: 4px;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+      border-bottom-right-radius: 18px;
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .msg-row.from-user .msg-bubble {
+      background: var(--accent);
+      color: #0a0a18;
+      border-radius: 18px 18px 4px 18px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 4px 16px rgba(168,184,255,0.12);
+    }
+
+    /* Timestamp on hover */
+    .msg-bubble::after {
+      content: attr(data-time);
+      position: absolute;
       font-family: var(--font-mono); font-size: 10px;
-      color: var(--text-muted); letter-spacing: 0.04em;
+      color: var(--text-muted); letter-spacing: 0.03em;
+      white-space: nowrap;
       opacity: 0; transition: opacity 0.15s;
+      bottom: -18px;
       pointer-events: none;
     }
-    .msg:hover .msg-time { opacity: 1; }
+    .msg-row.from-agent .msg-bubble::after { left: 0; }
+    .msg-row.from-user  .msg-bubble::after { right: 0; }
+    .msg-bubble:hover::after { opacity: 1; }
 
-    .msg-label {
-      font-family: var(--font-mono); font-size: 10px;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      margin-bottom: 10px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .msg.from-user .msg-label { color: var(--text-muted); }
-    .msg.from-agent .msg-label { color: var(--accent-dim); }
-    .msg-label-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.5; }
-
-    /* Agent icon badge in label */
-    .msg-agent-icon {
-      width: 18px; height: 18px; border-radius: 5px;
-      background: var(--surface-raise);
-      border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .msg-agent-icon i { font-size: 11px; color: var(--accent); line-height: 1; }
-    .msg-body {
-      font-size: 14px; line-height: 1.8;
-      color: var(--text-primary); white-space: pre-wrap; word-break: break-word;
-    }
-    .msg.from-agent .msg-body {
-      font-family: var(--font-mono); font-size: 13px; line-height: 1.85;
-      background: var(--surface); border: 1px solid var(--border-soft);
-      border-left: 2px solid var(--accent-dim);
-      border-radius: var(--radius); padding: 16px 18px;
-      box-shadow: var(--shadow-sm);
-    }
+    /* Extra bottom padding so timestamp doesn't overlap next message */
+    .msg-row:last-child { margin-bottom: 10px; }
 
     .msg-line-cmd { color: var(--text-muted); }
 
     .time-divider {
       display: flex; align-items: center; gap: 12px;
-      padding: 8px 0; pointer-events: none;
+      padding: 16px 0 8px; pointer-events: none;
     }
     .time-divider::before, .time-divider::after {
       content: ''; flex: 1; height: 1px; background: var(--border-soft);
@@ -797,33 +826,47 @@
     }
 
     .cursor {
-      display: inline-block; width: 7px; height: 1.1em;
+      display: inline-block; width: 2px; height: 1.1em;
       background: var(--accent); vertical-align: text-bottom;
-      margin-left: 1px; animation: blink 0.75s step-end infinite;
+      margin-left: 1px; border-radius: 1px;
+      animation: blink 0.75s step-end infinite;
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-    .processing { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
-    .processing-dots { display: flex; gap: 4px; }
-    .processing-dots span { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); animation: bdot 1.2s ease-in-out infinite; }
-    .processing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .processing-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bdot { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+    .processing {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text-muted);
+    }
+    .processing-dots { display: flex; gap: 5px; align-items: center; }
+    .processing-dots span {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent); opacity: 0.4;
+      animation: bdot 1.4s ease-in-out infinite;
+    }
+    .processing-dots span:nth-child(2) { animation-delay: 0.18s; }
+    .processing-dots span:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes bdot { 0%,60%,100%{opacity:0.25;transform:scale(0.75)} 30%{opacity:1;transform:scale(1)} }
 
     #empty {
       display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 60vh;
-      gap: 6px; pointer-events: none; text-align: center;
+      justify-content: center; min-height: 65vh;
+      gap: 0; pointer-events: none; text-align: center;
     }
     #empty-icon {
-      width: 44px; height: 44px; border-radius: 11px;
-      background: var(--surface); border: 1px solid var(--border);
+      width: 64px; height: 64px;
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(168,184,255,0.08) 0%, transparent 100%);
+      border: 1px solid rgba(168,184,255,0.1);
     }
-    #empty-icon i { font-size: 22px; color: var(--accent); opacity: 0.7; }
-    #empty-title { font-size: 24px; font-weight: 300; color: var(--text-primary); letter-spacing: -0.025em; }
-    #empty-sub   { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    #empty-icon i { font-size: 30px; color: var(--accent); opacity: 0.6; }
+    #empty-title {
+      font-size: 28px; font-weight: 300; color: var(--text-primary);
+      letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 8px;
+    }
+    #empty-title strong { font-weight: 500; }
+    #empty-sub { font-size: 14px; color: var(--text-muted); line-height: 1.5; max-width: 280px; }
 
     /* ── Input bar ─────────────────────────────────────────────── */
     #input-bar {
@@ -1197,8 +1240,8 @@
               <div id="empty-icon">
                 <i class="ph ph-circles-three"></i>
               </div>
-              <div id="empty-title">Ask Kai anything</div>
-              <div id="empty-sub">send a message to begin</div>
+              <div id="empty-title"><strong>Ask Kai</strong> anything</div>
+              <div id="empty-sub">Start a conversation — I can write code,<br>answer questions, and use tools for you.</div>
             </div>
           </div>
         </div>
@@ -1692,67 +1735,54 @@
     const wrap = document.getElementById('feed-inner');
     maybeAddDivider(wrap);
 
-    const msg = document.createElement('div');
-    msg.className = `msg from-${role}`;
-    msg.id = `msg-${++msgCount}`;
+    const row = document.createElement('div');
+    row.className = `msg-row from-${role}`;
+    row.id = `msg-${++msgCount}`;
     updateProgress();
 
-    const time = document.createElement('div');
-    time.className = 'msg-time';
-    time.textContent = nowStr();
-
-    const label = document.createElement('div');
-    label.className = 'msg-label';
-    if (role === 'user') {
-      const dot = document.createElement('span');
-      dot.className = 'msg-label-dot';
-      label.appendChild(dot);
-      label.append('YOU');
-    } else {
-      label.innerHTML = `<span class="msg-agent-icon"><i class="ph-bold ph-circles-three"></i></span>KAI`;
+    if (role === 'agent') {
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.innerHTML = `<i class="ph-bold ph-circles-three"></i>`;
+      row.appendChild(avatar);
     }
 
-    const body = document.createElement('div');
-    body.className = 'msg-body';
-    body.textContent = text;
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.setAttribute('data-time', nowStr());
+    bubble.textContent = text;
 
-    msg.appendChild(time);
-    msg.appendChild(label);
-    msg.appendChild(body);
-    wrap.appendChild(msg);
+    row.appendChild(bubble);
+    wrap.appendChild(row);
     scrollToBottom();
     updateScrollThumb();
-    return body;
+    return bubble;
   }
 
   function addProcessing() {
     document.getElementById('empty')?.remove();
     const wrap = document.getElementById('feed-inner');
 
-    const msg = document.createElement('div');
-    msg.className = 'msg from-agent';
-    msg.id = `msg-${++msgCount}`;
+    const row = document.createElement('div');
+    row.className = 'msg-row from-agent';
+    row.id = `msg-${++msgCount}`;
     updateProgress();
 
-    const time = document.createElement('div');
-    time.className = 'msg-time';
-    time.textContent = nowStr();
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.innerHTML = `<i class="ph-bold ph-circles-three"></i>`;
 
-    const label = document.createElement('div');
-    label.className = 'msg-label';
-    label.innerHTML = `<span class="msg-agent-icon"><i class="ph-bold ph-circles-three"></i></span>KAI`;
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    bubble.setAttribute('data-time', nowStr());
+    bubble.innerHTML = '<div class="processing"><div class="processing-dots"><span></span><span></span><span></span></div></div>';
 
-    const body = document.createElement('div');
-    body.className = 'msg-body';
-    body.innerHTML = '<div class="processing"><div class="processing-dots"><span></span><span></span><span></span></div>processing...</div>';
-
-    msg.appendChild(time);
-    msg.appendChild(label);
-    msg.appendChild(body);
-    wrap.appendChild(msg);
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    wrap.appendChild(row);
     scrollToBottom();
     updateScrollThumb();
-    return { msg, body };
+    return { msg: row, body: bubble };
   }
 
   async function typewrite(el, text, delay = 18) {
@@ -1798,8 +1828,8 @@
     wrap.innerHTML = `
       <div id="empty">
         <div id="empty-icon"><i class="ph ph-circles-three"></i></div>
-        <div id="empty-title">Ask Kai anything</div>
-        <div id="empty-sub">send a message to begin</div>
+        <div id="empty-title"><strong>Ask Kai</strong> anything</div>
+        <div id="empty-sub">Start a conversation — I can write code,<br>answer questions, and use tools for you.</div>
       </div>`;
   }
 
