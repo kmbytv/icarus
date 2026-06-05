@@ -6,7 +6,7 @@
   <title>KAI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     /* ── Variables ─────────────────────────────────────────────── */
     :root {
@@ -25,8 +25,8 @@
       --danger:         #E05555;
       --green:          #5EA85E;
       --warn:           #C8A96E;
-      --font-mono:      'IBM Plex Mono', monospace;
-      --font-ui:        'IBM Plex Sans', sans-serif;
+      --font-mono:      'JetBrains Mono', monospace;
+      --font-ui:        'Inter', sans-serif;
       --header-h:       56px;
       --sidebar-w:      260px;
       --radius-sm:      6px;
@@ -43,11 +43,9 @@
       background: var(--bg);
       color: var(--text-primary);
       font-family: var(--font-ui);
-      font-size: 15px;
-      line-height: 1.55;
+      font-size: 14px;
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      font-feature-settings: 'kern' 1, 'liga' 1;
     }
     /* Radial identity gradient — very subtle lavender center */
     body::before {
@@ -97,8 +95,8 @@
       flex-shrink: 0;
     }
     #logo-icon svg { width: 14px; height: 14px; color: var(--accent); }
-    #logo-text { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; }
-    #logo-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 0.03em; font-weight: 400; }
+    #logo-text { font-size: 14px; font-weight: 500; letter-spacing: 0.02em; }
+    #logo-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 0.02em; }
 
     #burger {
       display: none; flex-direction: column; gap: 4px;
@@ -156,13 +154,12 @@
     }
     .hdr-btn {
       display: flex; align-items: center; gap: 6px;
-      padding: 6px 13px;
+      padding: 6px 12px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--surface);
       color: var(--text-secondary);
       font-size: 12px; font-weight: 500;
-      letter-spacing: 0.01em;
       transition: border-color 0.15s, color 0.15s, background 0.15s;
     }
     .hdr-btn:hover { border-color: var(--accent-dim); color: var(--text-primary); background: var(--surface-raise); }
@@ -222,13 +219,13 @@
       border-bottom: 1px solid var(--border-soft);
     }
     #sidebar-welcome-name {
-      font-size: 19px; font-weight: 300;
+      font-size: 20px; font-weight: 300;
       color: var(--text-primary);
-      letter-spacing: -0.01em;
-      line-height: 1.3;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
       margin-bottom: 4px;
     }
-    #sidebar-welcome-name strong { font-weight: 600; }
+    #sidebar-welcome-name strong { font-weight: 500; }
     #sidebar-welcome-meta {
       font-size: 11px; color: var(--text-muted);
     }
@@ -280,7 +277,7 @@
     .nav-item:hover svg { opacity: 0.9; }
     .nav-item.active {
       background: var(--accent-glow);
-      color: var(--text-primary); font-weight: 600;
+      color: var(--text-primary); font-weight: 500;
       border-right-color: var(--accent);
     }
     .nav-item.active svg { opacity: 1; color: var(--accent); }
@@ -364,7 +361,7 @@
       color: var(--text-secondary);
     }
     #sidebar-user-info { flex: 1; min-width: 0; }
-    #sidebar-user-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+    #sidebar-user-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
     #sidebar-user-sub  { font-size: 11px; color: var(--text-muted); }
 
     /* ── Main ──────────────────────────────────────────────────── */
@@ -767,14 +764,14 @@
     }
     .msg-agent-icon svg { width: 9px; height: 9px; color: var(--accent); }
     .msg-body {
-      font-size: 15px; line-height: 1.85;
+      font-size: 14px; line-height: 1.8;
       color: var(--text-primary); white-space: pre-wrap; word-break: break-word;
     }
     .msg.from-agent .msg-body {
-      font-family: var(--font-mono); font-size: 13px; line-height: 1.9;
+      font-family: var(--font-mono); font-size: 13px; line-height: 1.85;
       background: var(--surface); border: 1px solid var(--border-soft);
       border-left: 2px solid var(--accent-dim);
-      border-radius: var(--radius); padding: 18px 20px;
+      border-radius: var(--radius); padding: 16px 18px;
       box-shadow: var(--shadow-sm);
     }
 
@@ -819,7 +816,7 @@
       margin-bottom: 10px;
     }
     #empty-icon svg { width: 19px; height: 19px; color: var(--accent); opacity: 0.7; }
-    #empty-title { font-size: 24px; font-weight: 300; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.2; }
+    #empty-title { font-size: 24px; font-weight: 300; color: var(--text-primary); letter-spacing: -0.025em; }
     #empty-sub   { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 
     /* ── Input bar ─────────────────────────────────────────────── */
