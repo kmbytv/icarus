@@ -12,37 +12,47 @@
     :root {
       --bg:             #111008;
       --surface:        #1A1810;
-      --surface-user:   #0E0C06;
-      --surface-side:   #1E1C12;
+      --surface-raise:  #201E14;
+      --surface-side:   #161410;
       --border:         #2A2618;
+      --border-soft:    #221F14;
       --text-primary:   #F0EEE8;
       --text-secondary: #9A9488;
       --text-muted:     #5A5448;
       --accent:         #C8A96E;
       --accent-dim:     #9A7E4E;
+      --accent-glow:    rgba(200,169,110,0.10);
+      --danger:         #C87B6E;
+      --green:          #7EAF7E;
       --font-mono:      'JetBrains Mono', monospace;
       --font-ui:        'Inter', sans-serif;
-      --header-h:       48px;
-      --input-h:        64px;
-      --sidebar-w:      240px;
-      --radius:         6px;
+      --header-h:       56px;
+      --sidebar-w:      248px;
+      --radius-sm:      6px;
+      --radius:         10px;
+      --radius-lg:      14px;
+      --shadow:         0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+      --shadow-sm:      0 1px 2px rgba(0,0,0,0.3);
     }
 
     /* ── Reset ─────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; -webkit-font-smoothing: antialiased; }
-    button { cursor: pointer; border: none; background: none; font-family: var(--font-ui); color: inherit; }
-    textarea { resize: none; border: none; outline: none; font-family: var(--font-ui); font-size: 15px; color: var(--text-primary); background: transparent; }
-    button { font-family: var(--font-ui); }
-    ::selection { background: var(--accent); color: var(--bg); }
-    ::-webkit-scrollbar { display: none; }
-
-    /* ── Layout ────────────────────────────────────────────────── */
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
+    button { cursor: pointer; border: none; background: none; font-family: var(--font-ui); color: inherit; font-size: 13px; }
+    textarea { resize: none; border: none; outline: none; font-family: var(--font-ui); font-size: 14px; color: var(--text-primary); background: transparent; }
+    ::selection { background: var(--accent); color: var(--bg); }
+    ::-webkit-scrollbar { width: 0; height: 0; }
+
+    /* ── App shell ─────────────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; height: 100%; }
 
     /* ── Header ────────────────────────────────────────────────── */
     #header {
@@ -51,7 +61,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
+      padding: 0 20px 0 0;
       border-bottom: 1px solid var(--border);
       background: var(--bg);
       z-index: 100;
@@ -59,79 +69,113 @@
     #header-left {
       display: flex;
       align-items: center;
-      gap: 16px;
+      height: 100%;
+    }
+    /* Logo block — matches sidebar width */
+    #logo-block {
+      width: var(--sidebar-w);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #logo-icon {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      background: var(--surface-raise);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    #logo-icon svg { width: 14px; height: 14px; color: var(--accent); }
+    #logo-text {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
     }
     #burger {
       display: none;
       flex-direction: column;
       gap: 4px;
-      padding: 4px;
-      opacity: 0.6;
+      padding: 8px;
+      margin-left: 4px;
+      opacity: 0.5;
       transition: opacity 0.15s;
     }
     #burger:hover { opacity: 1; }
-    #burger span {
-      display: block;
-      width: 18px;
-      height: 1.5px;
-      background: var(--text-primary);
-      border-radius: 2px;
-    }
-    #logo {
-      font-family: var(--font-ui);
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-primary);
-      letter-spacing: 0.06em;
-    }
+    #burger span { display: block; width: 16px; height: 1.5px; background: var(--text-primary); border-radius: 2px; }
+
+    /* Status chip — in header after logo */
     #status {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-muted);
       display: flex;
       align-items: center;
       gap: 6px;
-      letter-spacing: 0.06em;
+      margin-left: 20px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
     }
     #status-dot {
-      width: 6px;
-      height: 6px;
+      width: 6px; height: 6px;
       border-radius: 50%;
-      background: #6EAF6E;
+      background: var(--green);
       flex-shrink: 0;
       transition: background 0.3s;
     }
-    #status-dot.thinking {
-      background: var(--accent);
-      animation: pulse 1s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.3; }
-    }
+    #status-dot.thinking { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
     #header-right {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--text-muted);
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 6px;
+    }
+    .hdr-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .hdr-btn:hover { border-color: var(--accent-dim); color: var(--text-primary); background: var(--surface-raise); }
+    .hdr-btn svg { width: 13px; height: 13px; }
+    .hdr-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg);
+      font-weight: 500;
+    }
+    .hdr-btn.primary:hover { background: #D4B87C; border-color: #D4B87C; }
+    #clock-uptime {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
       letter-spacing: 0.04em;
+      margin-right: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
     }
 
-    /* ── Body (sidebar + main) ─────────────────────────────────── */
-    #body {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-    }
+    /* ── Body ──────────────────────────────────────────────────── */
+    #body { flex: 1; display: flex; overflow: hidden; }
 
     /* ── Sidebar ───────────────────────────────────────────────── */
     #sidebar-overlay {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
       z-index: 200;
     }
     #sidebar {
@@ -144,71 +188,54 @@
       overflow: hidden;
       z-index: 201;
     }
-    .sidebar-section {
-      padding: 20px 16px 8px;
-    }
-    .sidebar-label {
+    .sidebar-section-label {
       font-size: 10px;
       font-family: var(--font-mono);
       letter-spacing: 0.1em;
       color: var(--text-muted);
       text-transform: uppercase;
-      margin-bottom: 8px;
+      padding: 20px 16px 6px;
     }
-    /* Sidebar text nodes use --font-ui */
-    .chat-item, .sidebar-btn, .setting-row label + input,
-    #settings-panel, .sidebar-bottom { font-family: var(--font-ui); }
-    .sidebar-scroll {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0 8px;
-    }
-    .chat-item {
-      padding: 7px 8px;
-      border-radius: var(--radius);
-      font-family: var(--font-ui);
+    .sidebar-scroll { flex: 1; overflow-y: auto; padding: 4px 8px; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
       font-size: 13px;
+      font-weight: 400;
       color: var(--text-secondary);
       cursor: pointer;
+      transition: background 0.12s, color 0.12s;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      transition: background 0.1s, color 0.1s;
+      user-select: none;
     }
-    .chat-item:hover { background: rgba(200,169,110,0.08); color: var(--text-primary); }
-    .chat-item.active { background: rgba(200,169,110,0.12); color: var(--accent); }
-    .sidebar-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 8px 16px;
-    }
-    .sidebar-bottom {
-      padding: 12px 8px;
-      border-top: 1px solid var(--border);
-    }
-    .sidebar-btn {
-      width: 100%;
-      padding: 7px 8px;
-      border-radius: var(--radius);
-      font-family: var(--font-ui);
-      font-size: 13px;
-      color: var(--text-secondary);
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: background 0.1s, color 0.1s;
-    }
-    .sidebar-btn:hover { background: rgba(200,169,110,0.08); color: var(--text-primary); }
-    .sidebar-btn.danger:hover { color: #C86E6E; }
+    .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.6; transition: opacity 0.12s; }
+    .nav-item:hover { background: var(--accent-glow); color: var(--text-primary); }
+    .nav-item:hover svg { opacity: 1; }
+    .nav-item.active { background: var(--accent-glow); color: var(--accent); font-weight: 500; }
+    .nav-item.active svg { opacity: 1; color: var(--accent); }
 
-    /* Settings panel inside sidebar */
+    .sidebar-divider { height: 1px; background: var(--border-soft); margin: 6px 12px; }
+
+    .sidebar-bottom { padding: 8px 8px 12px; }
+    .nav-item.danger:hover { background: rgba(200,123,110,0.1); color: var(--danger); }
+    .nav-item.danger:hover svg { color: var(--danger); opacity: 1; }
+
+    /* Settings panel */
     #settings-panel {
       display: none;
       flex-direction: column;
-      gap: 12px;
-      padding: 16px;
-      border-top: 1px solid var(--border);
+      gap: 10px;
+      padding: 12px 14px 14px;
+      margin: 0 8px 8px;
+      background: var(--bg);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
     }
     #settings-panel.open { display: flex; }
     .setting-row label {
@@ -218,15 +245,15 @@
       letter-spacing: 0.08em;
       color: var(--text-muted);
       text-transform: uppercase;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
     }
     .setting-row input {
       width: 100%;
-      background: var(--bg);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       padding: 6px 10px;
-      font-size: 13px;
+      font-size: 12px;
       font-family: var(--font-mono);
       color: var(--text-primary);
       outline: none;
@@ -235,88 +262,114 @@
     .setting-row input:focus { border-color: var(--accent-dim); }
     .setting-row input::placeholder { color: var(--text-muted); }
 
-    /* ── Main ──────────────────────────────────────────────────── */
-    #main {
-      flex: 1;
+    /* Sidebar user row */
+    #sidebar-user {
       display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-width: 0;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
     }
+    #sidebar-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--surface-raise);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    #sidebar-user-info { flex: 1; min-width: 0; }
+    #sidebar-user-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+    #sidebar-user-sub  { font-size: 11px; color: var(--text-muted); }
+
+    /* ── Main ──────────────────────────────────────────────────── */
+    #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
     /* ── Feed ──────────────────────────────────────────────────── */
-    #feed {
-      flex: 1;
-      overflow-y: auto;
-      padding: 32px 0 24px;
-      scroll-behavior: smooth;
-    }
+    #feed { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
     #feed-inner {
-      max-width: 720px;
+      max-width: 740px;
       margin: 0 auto;
-      padding: 0 24px;
+      padding: 32px 32px 16px;
       display: flex;
       flex-direction: column;
-      gap: 0;
+      gap: 2px;
     }
-    .msg {
-      padding: 20px 0;
-      border-bottom: 1px solid var(--border);
-    }
+
+    .msg { padding: 18px 0; border-bottom: 1px solid var(--border-soft); }
     .msg:last-child { border-bottom: none; }
+
     .msg-label {
       font-family: var(--font-mono);
       font-size: 10px;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .msg-body {
-      font-size: 15px;
-      line-height: 1.75;
-      color: var(--text-primary);
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .msg.from-user { background: transparent; }
-    .msg.from-agent .msg-body {
-      font-family: var(--font-mono);
-      font-size: 14px;
-      line-height: 1.8;
-    }
-    .msg.from-agent .msg-label { color: var(--accent-dim); }
-
-    /* Typewriter cursor */
-    .cursor {
-      display: inline-block;
-      width: 8px;
-      height: 1em;
-      background: var(--accent);
-      vertical-align: text-bottom;
-      margin-left: 2px;
-      animation: blink 0.8s step-end infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-    /* Processing state */
-    .processing {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      color: var(--text-muted);
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .processing::before {
-      content: '';
+    .msg.from-user .msg-label { color: var(--text-muted); }
+    .msg.from-agent .msg-label { color: var(--accent-dim); }
+    .msg-label-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.5;
+    }
+
+    .msg-body {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.from-agent .msg-body {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.85;
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Typewriter cursor */
+    .cursor {
       display: inline-block;
-      width: 6px;
-      height: 6px;
+      width: 7px; height: 1.1em;
+      background: var(--accent);
+      vertical-align: text-bottom;
+      margin-left: 1px;
+      animation: blink 0.75s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* Processing */
+    .processing {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .processing-dots { display: flex; gap: 4px; }
+    .processing-dots span {
+      width: 4px; height: 4px;
       border-radius: 50%;
       background: var(--accent);
-      animation: pulse 1s ease-in-out infinite;
+      animation: bounce 1.2s ease-in-out infinite;
     }
+    .processing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .processing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
 
     /* Empty state */
     #empty {
@@ -324,136 +377,189 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100%;
-      gap: 8px;
+      min-height: 60vh;
+      gap: 6px;
       pointer-events: none;
+      text-align: center;
     }
+    #empty-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 8px;
+    }
+    #empty-icon svg { width: 18px; height: 18px; color: var(--accent); opacity: 0.7; }
     #empty-title {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      color: var(--text-muted);
-      letter-spacing: 0.06em;
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
     }
     #empty-sub {
       font-size: 13px;
       color: var(--text-muted);
-      opacity: 0.5;
     }
 
     /* ── Input bar ─────────────────────────────────────────────── */
     #input-bar {
       flex-shrink: 0;
-      border-top: 1px solid var(--border);
-      padding: 12px 24px 16px;
+      padding: 12px 32px 20px;
       background: var(--bg);
+      border-top: 1px solid var(--border-soft);
     }
-    #input-wrap {
-      max-width: 720px;
+    #input-card {
+      max-width: 740px;
       margin: 0 auto;
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 12px;
-      transition: border-color 0.15s;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    #input-wrap:focus-within { border-color: var(--accent-dim); }
+    #input-card:focus-within {
+      border-color: var(--accent-dim);
+      box-shadow: var(--shadow), 0 0 0 3px rgba(200,169,110,0.07);
+    }
+    #input-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 10px 16px 0;
+    }
+    #input-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 6px 10px 10px 16px;
+    }
     #input {
       flex: 1;
-      min-height: 24px;
+      min-height: 22px;
       max-height: 120px;
       line-height: 1.6;
       color: var(--text-primary);
       overflow-y: auto;
+      font-size: 14px;
     }
     #input::placeholder { color: var(--text-muted); }
     #send-btn {
       flex-shrink: 0;
-      width: 28px;
-      height: 28px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
       color: var(--text-muted);
-      transition: color 0.15s, background 0.15s;
+      border: 1px solid transparent;
+      transition: all 0.15s;
     }
     #send-btn.ready {
-      color: var(--accent);
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg);
     }
-    #send-btn:hover.ready {
-      background: rgba(200,169,110,0.12);
+    #send-btn.ready:hover { background: #D4B87C; border-color: #D4B87C; }
+    #send-btn svg { width: 14px; height: 14px; }
+
+    /* hint */
+    #input-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 0 16px 8px;
+      opacity: 0.5;
     }
-    #send-btn svg { width: 16px; height: 16px; }
 
     /* ── Mobile ────────────────────────────────────────────────── */
     @media (max-width: 640px) {
       #burger { display: flex; }
-      #header-right { display: none; }
+      #logo-block { width: auto; border-right: none; padding: 0 12px; }
+      #clock-uptime, #hdr-clear { display: none; }
       #sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100%;
+        position: fixed; top: 0; left: 0; height: 100%;
         transform: translateX(-100%);
-        transition: transform 0.25s ease;
+        transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
       }
       #sidebar.open { transform: translateX(0); }
       #sidebar-overlay.open { display: block; }
-      #feed-inner { padding: 0 16px; }
-      #input-bar { padding: 10px 12px 20px; }
+      #feed-inner { padding: 20px 16px 8px; }
+      #input-bar { padding: 8px 12px 16px; }
     }
   </style>
 </head>
 <body>
-
 <div id="app">
 
-  <!-- Header -->
+  <!-- ── Header ───────────────────────────────────────────────── -->
   <header id="header">
     <div id="header-left">
+      <div id="logo-block">
+        <div id="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span id="logo-text">KAI</span>
+      </div>
       <button id="burger" aria-label="Menu" onclick="toggleSidebar()">
         <span></span><span></span><span></span>
       </button>
-      <span id="logo">KAI</span>
       <div id="status">
         <span id="status-dot"></span>
         <span id="status-text">ONLINE</span>
       </div>
     </div>
     <div id="header-right">
-      <span id="clock">--:--:--</span>
-      <span id="uptime">up 0:00</span>
+      <div id="clock-uptime">
+        <span id="clock">--:--:--</span>
+        <span id="uptime">up 0:00</span>
+      </div>
+      <button class="hdr-btn" id="hdr-clear" onclick="clearFeed()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Clear
+      </button>
+      <button class="hdr-btn" onclick="toggleSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+      <button class="hdr-btn primary" onclick="handleSend()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Send
+      </button>
     </div>
   </header>
 
-  <!-- Body -->
+  <!-- ── Body ─────────────────────────────────────────────────── -->
   <div id="body">
 
-    <!-- Sidebar overlay (mobile) -->
     <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
     <nav id="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-label">Chats</div>
-      </div>
+      <div class="sidebar-section-label">Chats</div>
       <div class="sidebar-scroll" id="chat-list">
-        <div class="chat-item active">New session</div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          New session
+        </div>
       </div>
+
       <div class="sidebar-divider"></div>
+
       <div class="sidebar-bottom">
-        <button class="sidebar-btn" onclick="toggleSettings()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <div class="nav-item" onclick="toggleSettings()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Settings
-        </button>
-        <button class="sidebar-btn danger" onclick="clearFeed()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-          Clear
-        </button>
+        </div>
+        <div class="nav-item danger" onclick="clearFeed()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Clear chat
+        </div>
       </div>
+
       <div id="settings-panel">
         <div class="setting-row">
           <label>API Key</label>
@@ -464,6 +570,14 @@
           <input type="text" id="model-input" value="claude-opus-4-8" placeholder="model id">
         </div>
       </div>
+
+      <div id="sidebar-user">
+        <div id="sidebar-avatar">A</div>
+        <div id="sidebar-user-info">
+          <div id="sidebar-user-name">Agent</div>
+          <div id="sidebar-user-sub">personal instance</div>
+        </div>
+      </div>
     </nav>
 
     <!-- Main -->
@@ -471,21 +585,30 @@
       <div id="feed">
         <div id="feed-inner">
           <div id="empty">
-            <span id="empty-title">KAI READY</span>
-            <span id="empty-sub">send a message to begin</span>
+            <div id="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <div id="empty-title">Ask Kai anything</div>
+            <div id="empty-sub">send a message to begin</div>
           </div>
         </div>
       </div>
 
-      <!-- Input bar -->
+      <!-- Input -->
       <div id="input-bar">
-        <div id="input-wrap">
-          <textarea id="input" rows="1" placeholder="message..." spellcheck="false"></textarea>
-          <button id="send-btn" onclick="handleSend()" aria-label="Send">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-          </button>
+        <div id="input-card">
+          <span id="input-label">Message</span>
+          <div id="input-row">
+            <textarea id="input" rows="1" placeholder="Type here..." spellcheck="false"></textarea>
+            <button id="send-btn" onclick="handleSend()" aria-label="Send">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+          <div id="input-hint">Enter to send · Shift+Enter for new line</div>
         </div>
       </div>
     </div>
@@ -494,66 +617,59 @@
 </div>
 
 <script>
-  // ── State ───────────────────────────────────────────────────────
   const startTime = Date.now();
   let isThinking  = false;
   let msgCount    = 0;
 
-  // ── Clock & uptime ──────────────────────────────────────────────
+  // ── Clock & uptime ──────────────────────────────────────────
   function pad(n) { return String(n).padStart(2, '0'); }
-
   function updateClock() {
     const now = new Date();
     document.getElementById('clock').textContent =
       `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-
-    const sec  = Math.floor((Date.now() - startTime) / 1000);
-    const h    = Math.floor(sec / 3600);
-    const m    = Math.floor((sec % 3600) / 60);
-    const s    = sec % 60;
+    const sec = Math.floor((Date.now() - startTime) / 1000);
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
     document.getElementById('uptime').textContent =
       h ? `up ${h}:${pad(m)}:${pad(s)}` : `up ${m}:${pad(s)}`;
   }
   setInterval(updateClock, 1000);
   updateClock();
 
-  // ── Status ──────────────────────────────────────────────────────
+  // ── Status ──────────────────────────────────────────────────
   function setStatus(thinking) {
     isThinking = thinking;
-    const dot  = document.getElementById('status-dot');
-    const txt  = document.getElementById('status-text');
-    dot.classList.toggle('thinking', thinking);
-    txt.textContent = thinking ? 'THINKING' : 'ONLINE';
+    document.getElementById('status-dot').classList.toggle('thinking', thinking);
+    document.getElementById('status-text').textContent = thinking ? 'THINKING' : 'ONLINE';
   }
 
-  // ── Sidebar ─────────────────────────────────────────────────────
+  // ── Sidebar ─────────────────────────────────────────────────
   function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebar-overlay').classList.toggle('open');
   }
-
   function toggleSettings() {
     document.getElementById('settings-panel').classList.toggle('open');
   }
 
-  // ── Feed ─────────────────────────────────────────────────────────
+  // ── Feed ─────────────────────────────────────────────────────
   function scrollToBottom() {
     const feed = document.getElementById('feed');
     feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
   }
 
   function addMessage(role, text) {
-    const empty = document.getElementById('empty');
-    if (empty) empty.remove();
-
-    const wrap = document.getElementById('feed-inner');
-    const msg  = document.createElement('div');
+    document.getElementById('empty')?.remove();
+    const wrap  = document.getElementById('feed-inner');
+    const msg   = document.createElement('div');
     msg.className = `msg from-${role}`;
     msg.id = `msg-${++msgCount}`;
 
     const label = document.createElement('div');
     label.className = 'msg-label';
-    label.textContent = role === 'user' ? 'YOU' : 'KAI';
+    const dot = document.createElement('span');
+    dot.className = 'msg-label-dot';
+    label.appendChild(dot);
+    label.append(role === 'user' ? 'YOU' : 'KAI');
 
     const body = document.createElement('div');
     body.className = 'msg-body';
@@ -567,9 +683,7 @@
   }
 
   function addProcessing() {
-    const empty = document.getElementById('empty');
-    if (empty) empty.remove();
-
+    document.getElementById('empty')?.remove();
     const wrap = document.getElementById('feed-inner');
     const msg  = document.createElement('div');
     msg.className = 'msg from-agent';
@@ -577,14 +691,17 @@
 
     const label = document.createElement('div');
     label.className = 'msg-label';
-    label.textContent = 'KAI';
+    const dot = document.createElement('span');
+    dot.className = 'msg-label-dot';
+    label.appendChild(dot);
+    label.append('KAI');
 
     const body = document.createElement('div');
     body.className = 'msg-body';
 
-    const proc = document.createElement('span');
+    const proc = document.createElement('div');
     proc.className = 'processing';
-    proc.textContent = 'processing...';
+    proc.innerHTML = '<div class="processing-dots"><span></span><span></span><span></span></div>processing...';
     body.appendChild(proc);
 
     msg.appendChild(label);
@@ -594,12 +711,11 @@
     return { msg, body };
   }
 
-  async function typewrite(el, text, delay = 20) {
+  async function typewrite(el, text, delay = 18) {
     el.textContent = '';
     const cursor = document.createElement('span');
     cursor.className = 'cursor';
     el.appendChild(cursor);
-
     for (const char of text) {
       cursor.insertAdjacentText('beforebegin', char);
       scrollToBottom();
@@ -613,69 +729,52 @@
     wrap.innerHTML = '';
     const empty = document.createElement('div');
     empty.id = 'empty';
-    empty.innerHTML = '<span id="empty-title">KAI READY</span><span id="empty-sub">send a message to begin</span>';
+    empty.innerHTML = `
+      <div id="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+      <div id="empty-title">Ask Kai anything</div>
+      <div id="empty-sub">send a message to begin</div>`;
     wrap.appendChild(empty);
   }
 
-  // ── Input ────────────────────────────────────────────────────────
+  // ── Input ────────────────────────────────────────────────────
   const input   = document.getElementById('input');
   const sendBtn = document.getElementById('send-btn');
 
   input.addEventListener('input', () => {
-    // Auto-grow
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-    // Toggle send button state
     sendBtn.classList.toggle('ready', input.value.trim().length > 0);
   });
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   });
 
-  // ── Send ─────────────────────────────────────────────────────────
+  // ── Send ─────────────────────────────────────────────────────
   function handleSend() {
     const text = input.value.trim();
     if (!text || isThinking) return;
-
     input.value = '';
     input.style.height = 'auto';
     sendBtn.classList.remove('ready');
-
     addMessage('user', text);
     sendToAgent(text);
   }
 
-  // ── Agent stub ──────────────────────────────────────────────────
+  // ── Agent stub ───────────────────────────────────────────────
   async function sendToAgent(userText) {
     setStatus(true);
-
     await sleep(500);
-    const { msg, body } = addProcessing();
-
+    const { body } = addProcessing();
     await sleep(1500);
-
-    // Demo response — replace this block with real API call
-    const steps = [
-      `> analyzing input...\n`,
-      `> retrieving context...\n`,
-      `> generating response...\n\n`,
-    ];
-    const answer = `I received your message: "${userText}"\n\nThis is a demo response. Connect a real API in sendToAgent() to make me useful.`;
-    const full = steps.join('') + answer;
-
+    const full =
+      `> analyzing input...\n> retrieving context...\n> generating response...\n\n` +
+      `I received: "${userText}"\n\nThis is a demo. Connect a real API inside sendToAgent() to activate.`;
     body.textContent = '';
     await typewrite(body, full, 18);
-
     setStatus(false);
   }
 
-  // ── Utils ────────────────────────────────────────────────────────
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
-
 </body>
 </html>
