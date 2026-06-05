@@ -423,6 +423,7 @@
       line-height: 1.6; color: var(--text-primary);
       overflow-y: auto; font-size: 14px;
       outline: none; word-break: break-word;
+      white-space: pre-wrap;
     }
     #input:empty::before {
       content: attr(data-placeholder);
@@ -848,7 +849,7 @@
   let typingTimer = null;
 
   function getInputText() {
-    return input.innerText.replace(/\n$/, '');
+    return input.innerText.replace(/ /g, ' ').replace(/\n$/, '');
   }
 
   function onInputChange() {
@@ -878,7 +879,7 @@
     range.deleteContents();
     const span = document.createElement('span');
     span.className = 'ch';
-    span.textContent = e.key;
+    span.textContent = e.key === ' ' ? ' ' : e.key;
     range.insertNode(span);
     range.setStartAfter(span);
     range.collapse(true);
