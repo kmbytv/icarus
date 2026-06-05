@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <style>
     /* ── Variables ─────────────────────────────────────────────── */
     :root {
@@ -1039,7 +1039,7 @@
     <div id="header-left">
       <div id="logo-block">
         <div id="logo-icon">
-          <i class="ph-bold ph-circles-three"></i>
+          <i class="ti ti-circles"></i>
         </div>
         <div>
           <div id="logo-text">KAI</div>
@@ -1066,11 +1066,11 @@
         <span id="uptime">up 0:00</span>
       </div>
       <button class="hdr-btn" id="hdr-clear" onclick="clearFeed()">
-        <i class="ph ph-trash"></i>
+        <i class="ti ti-trash"></i>
         Clear
       </button>
       <button class="hdr-btn primary" onclick="handleSend()">
-        <i class="ph ph-paper-plane-tilt"></i>
+        <i class="ti ti-send"></i>
         Send
       </button>
     </div>
@@ -1079,7 +1079,7 @@
   <!-- ── API Banner ───────────────────────────────────────────── -->
   <div id="api-banner">
     <div id="api-banner-left">
-      <i class="ph-fill ph-warning-circle" style="font-size:14px"></i>
+      <i class="ti ti-alert-circle" style="font-size:14px"></i>
       No API key configured — responses will use demo mode
     </div>
     <div style="display:flex;align-items:center;gap:4px;">
@@ -1111,17 +1111,17 @@
           </div>
           <div class="sb-section-body">
             <div class="nav-item active" id="tab-chat-btn" onclick="switchTab('chat')">
-              <i class="ph ph-chat-centered-text"></i>
+              <i class="ti ti-message"></i>
               Chat
               <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘1</span>
             </div>
             <div class="nav-item" id="tab-context-btn" onclick="switchTab('context')">
-              <i class="ph ph-file-text"></i>
+              <i class="ti ti-file-text"></i>
               Context
               <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘2</span>
             </div>
             <div class="nav-item" id="tab-code-btn" onclick="switchTab('code')">
-              <i class="ph ph-terminal-window"></i>
+              <i class="ti ti-terminal-2"></i>
               Code
               <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘3</span>
             </div>
@@ -1138,7 +1138,7 @@
           </div>
           <div class="sb-section-body">
             <div class="nav-item active" id="nav-session">
-              <i class="ph ph-plus-circle"></i>
+              <i class="ti ti-circle-plus"></i>
               New session
             </div>
           </div>
@@ -1154,15 +1154,15 @@
           </div>
           <div class="sb-section-body">
             <div class="nav-item">
-              <i class="ph ph-code-block"></i>
+              <i class="ti ti-code"></i>
               Code
             </div>
             <div class="nav-item">
-              <i class="ph ph-magnifying-glass"></i>
+              <i class="ti ti-search"></i>
               Search
             </div>
             <div class="nav-item">
-              <i class="ph ph-book-open"></i>
+              <i class="ti ti-books"></i>
               Documents
               <span class="nav-badge">soon</span>
             </div>
@@ -1179,12 +1179,12 @@
           </div>
           <div class="sb-section-body">
             <div class="nav-item" id="settings-nav" onclick="toggleSettings()">
-              <i class="ph ph-sliders"></i>
+              <i class="ti ti-adjustments-horizontal"></i>
               Settings
               <span class="nav-badge alert" id="settings-badge" style="display:none">!</span>
             </div>
             <div class="nav-item danger" onclick="clearFeed()">
-              <i class="ph ph-trash-simple"></i>
+              <i class="ti ti-trash"></i>
               Clear chat
             </div>
           </div>
@@ -1234,7 +1234,7 @@
           <div id="feed-inner">
             <div id="empty">
               <div id="empty-icon">
-                <i class="ph ph-circles-three"></i>
+                <i class="ti ti-circles"></i>
               </div>
               <div id="empty-title"><strong>Ask Kai</strong> anything</div>
               <div id="empty-sub">Start a conversation — I can write code,<br>answer questions, and use tools for you.</div>
@@ -1249,7 +1249,7 @@
                 <span id="typing-dot"></span>
                 <div id="input" contenteditable="true" spellcheck="false" data-placeholder="Ask Kai anything..." role="textbox" aria-multiline="true"></div>
                 <button id="send-btn" onclick="handleSend()" aria-label="Send">
-                  <i class="ph-bold ph-arrow-up"></i>
+                  <i class="ti ti-arrow-up"></i>
                 </button>
               </div>
             </div>
@@ -1283,7 +1283,7 @@
                 <div id="code-input-inner">
                   <textarea id="code-input" rows="1" placeholder="Ask KAI to write or run code…"></textarea>
                   <button id="code-send-btn" onclick="handleCodeSend()" aria-label="Send">
-                    <i class="ph-bold ph-arrow-up"></i>
+                    <i class="ti ti-arrow-up"></i>
                   </button>
                 </div>
               </div>
@@ -1739,7 +1739,7 @@
     if (role === 'agent') {
       const avatar = document.createElement('div');
       avatar.className = 'msg-avatar';
-      avatar.innerHTML = `<i class="ph-bold ph-circles-three"></i>`;
+      avatar.innerHTML = `<i class="ti ti-circles"></i>`;
       row.appendChild(avatar);
     }
 
@@ -1766,7 +1766,7 @@
 
     const avatar = document.createElement('div');
     avatar.className = 'msg-avatar';
-    avatar.innerHTML = `<i class="ph-bold ph-circles-three"></i>`;
+    avatar.innerHTML = `<i class="ti ti-circles"></i>`;
 
     const bubble = document.createElement('div');
     bubble.className = 'msg-bubble';
@@ -1823,7 +1823,7 @@
     const wrap = document.getElementById('feed-inner');
     wrap.innerHTML = `
       <div id="empty">
-        <div id="empty-icon"><i class="ph ph-circles-three"></i></div>
+        <div id="empty-icon"><i class="ti ti-circles"></i></div>
         <div id="empty-title"><strong>Ask Kai</strong> anything</div>
         <div id="empty-sub">Start a conversation — I can write code,<br>answer questions, and use tools for you.</div>
       </div>`;
