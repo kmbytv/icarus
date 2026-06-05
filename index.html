@@ -385,6 +385,67 @@ document.addEventListener('DOMContentLoaded', async function() {
       window.Babel.transformScriptTags();
     }
 
+    // ── Nuclear inline-style colour fixer ────────────────────────────────
+    // React injects inline styles that CSS !important cannot override.
+    // We walk the DOM, detect blue/purple inline colour values, and
+    // replace them. A MutationObserver re-runs this on every React update.
+
+    const __isBluePurple = (v) => {
+      if (!v) return false;
+      const s = v.replace(/\s/g, '').toLowerCase();
+      // named colours
+      if (/\b(blue|indigo|purple|violet|navy|slateblue|mediumpurple|rebeccapurple)\b/.test(s)) return true;
+      // hex — blue/purple dominant: high B, low-ish G, any R
+      const hex6 = s.match(/#([0-9a-f]{6})/g) || [];
+      const hex3 = s.match(/#([0-9a-f]{3})\b/g) || [];
+      const hexes = [
+        ...hex6.map(h => h.slice(1)),
+        ...hex3.map(h => h.slice(1).split('').map(c=>c+c).join(''))
+      ];
+      for (const h of hexes) {
+        const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+        if (b > 80 && b > g + 20 && b >= r - 60) return true; // blue/purple dominant
+      }
+      // rgb/hsl with high blue/purple
+      const rgb = s.match(/rgb\((\d+),(\d+),(\d+)\)/);
+      if (rgb) {
+        const [,r,g,b] = rgb.map(Number);
+        if (b > 80 && b > g + 20 && b >= r - 60) return true;
+      }
+      return false;
+    };
+
+    const __fixEl = (el) => {
+      if (!(el instanceof HTMLElement)) return;
+      const s = el.style;
+      if (s.backgroundColor && __isBluePurple(s.backgroundColor)) s.backgroundColor = '#0E0E16';
+      if (s.background    && __isBluePurple(s.background))    s.background    = '#0E0E16';
+      if (s.color         && __isBluePurple(s.color))         s.color         = '#8888A0';
+      if (s.borderColor   && __isBluePurple(s.borderColor))   s.borderColor   = '#1E1E2A';
+      if (s.fill          && __isBluePurple(s.fill))          s.fill          = '#2A2A38';
+      if (s.stroke        && __isBluePurple(s.stroke))        s.stroke        = 'none';
+      if (s.boxShadow     && __isBluePurple(s.boxShadow))     s.boxShadow     = 'none';
+      if (s.outlineColor  && __isBluePurple(s.outlineColor))  s.outlineColor  = '#1E1E2A';
+    };
+
+    const __fixAll = () => document.querySelectorAll('*').forEach(__fixEl);
+
+    // Run once after mount, then watch for React re-renders
+    setTimeout(__fixAll, 300);
+    setTimeout(__fixAll, 900);
+
+    const __obs = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === 'attributes' && m.attributeName === 'style') __fixEl(m.target);
+        if (m.type === 'childList') m.addedNodes.forEach(n => {
+          if (n instanceof HTMLElement) { __fixEl(n); n.querySelectorAll('*').forEach(__fixEl); }
+        });
+      }
+    });
+    // Start observing after React mounts
+    setTimeout(() => __obs.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style'] }), 500);
+    // ─────────────────────────────────────────────────────────────────────
+
     // DOM patches — guarded so each element is processed exactly once
     const __tagDefs = [
       { match: 'draft', label: 'DRAFT' },
