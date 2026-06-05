@@ -24,6 +24,7 @@
       --accent-glow:    rgba(153,153,153,0.07);
       --danger:         #E05555;
       --green:          #5EA85E;
+      --warn:           #C8A96E;
       --font-mono:      'JetBrains Mono', monospace;
       --font-ui:        'Inter', sans-serif;
       --header-h:       56px;
@@ -106,6 +107,18 @@
     #breadcrumb .bc-root { color: var(--text-muted); }
     #breadcrumb .bc-sep  { opacity: 0.4; font-size: 12px; }
     #breadcrumb .bc-cur  { color: var(--text-primary); font-weight: 500; }
+    /* Star pin button */
+    #bc-star {
+      margin-left: 4px;
+      font-size: 13px;
+      opacity: 0.25;
+      transition: opacity 0.15s, color 0.15s;
+      line-height: 1;
+      padding: 2px;
+      border-radius: 4px;
+    }
+    #bc-star:hover { opacity: 0.7; }
+    #bc-star.pinned { opacity: 1; color: #C8A96E; }
 
     /* Status */
     #status {
@@ -145,6 +158,35 @@
     .hdr-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 500; }
     .hdr-btn.primary:hover { background: #BBBBBB; border-color: #BBBBBB; }
 
+    /* ── API Key Warning Banner ────────────────────────────────── */
+    #api-banner {
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 20px 8px calc(var(--sidebar-w) + 20px);
+      background: rgba(200,169,110,0.06);
+      border-bottom: 1px solid rgba(200,169,110,0.18);
+      font-size: 12px;
+      color: var(--warn);
+    }
+    #api-banner.hidden { display: none; }
+    #api-banner-left { display: flex; align-items: center; gap: 8px; }
+    #api-banner-left svg { width: 13px; height: 13px; flex-shrink: 0; }
+    #api-banner-setup {
+      font-size: 11px; font-weight: 500;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(200,169,110,0.35);
+      color: var(--warn);
+      transition: background 0.15s;
+    }
+    #api-banner-setup:hover { background: rgba(200,169,110,0.1); }
+    #api-banner-close {
+      margin-left: 10px;
+      font-size: 16px; line-height: 1;
+      opacity: 0.4; padding: 2px 4px;
+      transition: opacity 0.15s;
+    }
+    #api-banner-close:hover { opacity: 0.9; }
 
     /* ── Body ──────────────────────────────────────────────────── */
     #body { flex: 1; display: flex; overflow: hidden; }
@@ -181,15 +223,35 @@
 
     /* Sections */
     .sidebar-scroll { flex: 1; overflow-y: auto; padding: 8px 0; }
-    .sb-section { padding: 12px 0 4px; }
+    .sb-section { padding: 4px 0; }
+
+    /* Collapsible section header */
+    .sb-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px 4px;
+      cursor: pointer;
+      user-select: none;
+    }
     .sb-section-label {
       font-size: 10px; font-family: var(--font-mono);
       letter-spacing: 0.1em; color: var(--text-muted);
       text-transform: uppercase;
-      padding: 0 16px 4px;
     }
+    .sb-section-arrow {
+      font-size: 9px; color: var(--text-muted);
+      transition: transform 0.2s;
+      opacity: 0.5;
+    }
+    .sb-section.collapsed .sb-section-arrow { transform: rotate(-90deg); }
+    .sb-section-body {
+      overflow: hidden;
+      max-height: 400px;
+      transition: max-height 0.2s ease, opacity 0.2s;
+      opacity: 1;
+    }
+    .sb-section.collapsed .sb-section-body { max-height: 0; opacity: 0; }
 
-    /* Nav items — active has right-side bar like Quantix */
+    /* Nav items */
     .nav-item {
       display: flex; align-items: center; gap: 10px;
       padding: 8px 16px;
@@ -250,6 +312,33 @@
     .setting-row input:focus { border-color: var(--accent-dim); }
     .setting-row input::placeholder { color: var(--text-muted); }
 
+    /* Sidebar progress bar */
+    #sidebar-progress {
+      padding: 10px 16px 12px;
+      border-top: 1px solid var(--border-soft);
+    }
+    #sidebar-progress-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    #sidebar-progress-label {
+      font-size: 10px; font-family: var(--font-mono);
+      letter-spacing: 0.08em; color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    #sidebar-progress-count {
+      font-size: 10px; font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+    #sidebar-progress-track {
+      height: 2px; background: var(--border); border-radius: 2px; overflow: hidden;
+    }
+    #sidebar-progress-fill {
+      height: 100%; background: var(--accent-dim); border-radius: 2px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
     /* User row */
     #sidebar-user {
       display: flex; align-items: center; gap: 10px;
@@ -269,12 +358,68 @@
     /* ── Main ──────────────────────────────────────────────────── */
     #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
+    /* ── Tabs ──────────────────────────────────────────────────── */
+    #tabs-bar {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 2px;
+      padding: 0 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .tab-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 12px 4px 10px;
+      font-size: 12px; font-weight: 500;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: var(--text-secondary); }
+    .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+    .tab-btn + .tab-btn { margin-left: 20px; }
+    .tab-shortcut {
+      font-family: var(--font-mono); font-size: 9px;
+      padding: 1px 5px; border-radius: 3px;
+      background: var(--surface-raise);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+    .tab-btn.active .tab-shortcut { border-color: var(--accent-dim); color: var(--accent-dim); }
+
+    /* ── Tab panels ────────────────────────────────────────────── */
+    #tab-chat    { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    #tab-context { flex: 1; display: flex; flex-direction: column; overflow: hidden; display: none; }
+
+    /* Context panel */
+    #context-inner {
+      flex: 1; overflow-y: auto;
+      max-width: 740px; width: 100%;
+      margin: 0 auto; padding: 32px 32px 24px;
+    }
+    #context-title {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 16px;
+    }
+    #system-prompt-area {
+      width: 100%; min-height: 160px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      font-family: var(--font-mono); font-size: 12px; line-height: 1.75;
+      color: var(--text-primary); outline: none; resize: vertical;
+      transition: border-color 0.15s;
+    }
+    #system-prompt-area:focus { border-color: var(--accent-dim); }
+    #system-prompt-area::placeholder { color: var(--text-muted); }
+    #context-meta { margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+
     /* ── Feed ──────────────────────────────────────────────────── */
     #feed {
       flex: 1; overflow-y: auto; scroll-behavior: smooth;
       position: relative;
     }
-    /* 6. Кастомный индикатор прокрутки */
     #scroll-track {
       position: absolute; top: 0; right: 0; width: 2px; height: 100%;
       background: transparent; z-index: 10; pointer-events: none;
@@ -292,7 +437,6 @@
       display: flex; flex-direction: column; gap: 2px;
     }
 
-    /* 5. Анимация появления сообщений */
     .msg {
       padding: 18px 0; border-bottom: 1px solid var(--border-soft);
       position: relative;
@@ -304,7 +448,6 @@
     }
     .msg:last-child { border-bottom: none; }
 
-    /* 4. Время при hover */
     .msg-time {
       position: absolute; right: 0; top: 20px;
       font-family: var(--font-mono); font-size: 10px;
@@ -334,10 +477,8 @@
       box-shadow: var(--shadow-sm);
     }
 
-    /* 2. Подсветка строк > внутри ответа агента */
     .msg-line-cmd { color: var(--text-muted); }
 
-    /* 1. Временной разделитель */
     .time-divider {
       display: flex; align-items: center; gap: 12px;
       padding: 8px 0; pointer-events: none;
@@ -351,7 +492,6 @@
       white-space: nowrap;
     }
 
-    /* Cursor */
     .cursor {
       display: inline-block; width: 7px; height: 1.1em;
       background: var(--accent); vertical-align: text-bottom;
@@ -359,7 +499,6 @@
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-    /* Processing */
     .processing { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
     .processing-dots { display: flex; gap: 4px; }
     .processing-dots span { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); animation: bdot 1.2s ease-in-out infinite; }
@@ -367,7 +506,6 @@
     .processing-dots span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes bdot { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
 
-    /* Empty */
     #empty {
       display: flex; flex-direction: column; align-items: center;
       justify-content: center; min-height: 60vh;
@@ -396,7 +534,7 @@
     }
     #input-card:focus-within {
       border-color: var(--accent-dim);
-      box-shadow: var(--shadow), 0 0 0 3px rgba(200,169,110,0.06);
+      box-shadow: var(--shadow), 0 0 0 3px rgba(153,153,153,0.06);
     }
     #input-label {
       display: block; font-family: var(--font-mono);
@@ -430,7 +568,6 @@
       color: var(--text-muted);
       pointer-events: none;
     }
-    /* каждый символ появляется с анимацией */
     #input .ch {
       display: inline-block;
       animation: ch-in 0.12s cubic-bezier(0.34,1.56,0.64,1) both;
@@ -453,7 +590,22 @@
       display: flex; justify-content: space-between; align-items: center;
       padding: 0 16px 8px;
     }
-    #input-hint { font-size: 11px; color: var(--text-muted); opacity: 0.4; }
+    /* Keyboard shortcut chips */
+    #input-shortcuts { display: flex; align-items: center; gap: 6px; }
+    .kbd-chip {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-muted); opacity: 0.45;
+      letter-spacing: 0.02em;
+    }
+    .kbd-chip kbd {
+      font-family: var(--font-mono); font-size: 9px;
+      padding: 1px 4px; border-radius: 3px;
+      background: var(--surface-raise);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .kbd-sep { color: var(--text-muted); opacity: 0.25; font-size: 11px; }
     #char-count { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); opacity: 0.4; letter-spacing: 0.04em; }
 
     /* ── Mobile ────────────────────────────────────────────────── */
@@ -466,6 +618,8 @@
       #sidebar-overlay.open { display: block; }
       #feed-inner { padding: 20px 16px 8px; }
       #input-bar { padding: 8px 12px 16px; }
+      #tabs-bar { padding: 0 16px; }
+      #api-banner { padding: 8px 16px; }
     }
   </style>
 </head>
@@ -493,6 +647,7 @@
         <span class="bc-root">KAI</span>
         <span class="bc-sep">/</span>
         <span class="bc-cur" id="bc-session">New session</span>
+        <button id="bc-star" title="Pin session" onclick="togglePin()">★</button>
       </div>
       <div id="status">
         <span id="status-dot"></span>
@@ -515,6 +670,17 @@
     </div>
   </header>
 
+  <!-- ── API Banner ───────────────────────────────────────────── -->
+  <div id="api-banner">
+    <div id="api-banner-left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      No API key configured — responses will use demo mode
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <button id="api-banner-setup" onclick="openSettings()">Set up</button>
+      <button id="api-banner-close" onclick="dismissBanner()" title="Dismiss">×</button>
+    </div>
+  </div>
 
   <!-- ── Body ─────────────────────────────────────────────────── -->
   <div id="body">
@@ -526,53 +692,68 @@
       <!-- Welcome block -->
       <div id="sidebar-welcome">
         <div id="sidebar-welcome-name">Welcome<br><strong id="agent-name">Back</strong></div>
-        <div id="sidebar-welcome-meta" id="last-seen">Session started <span id="session-time">just now</span></div>
+        <div id="sidebar-welcome-meta">Session started <span id="session-time">just now</span></div>
       </div>
 
       <div class="sidebar-scroll">
 
         <!-- Sessions -->
-        <div class="sb-section">
-          <div class="sb-section-label">Sessions</div>
-          <div class="nav-item active" id="nav-session">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            New session
+        <div class="sb-section" id="sec-sessions">
+          <div class="sb-section-header" onclick="toggleSection('sec-sessions')">
+            <span class="sb-section-label">Sessions</span>
+            <span class="sb-section-arrow">▾</span>
+          </div>
+          <div class="sb-section-body">
+            <div class="nav-item active" id="nav-session">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              New session
+            </div>
           </div>
         </div>
 
         <div class="sidebar-divider"></div>
 
         <!-- Tools -->
-        <div class="sb-section">
-          <div class="sb-section-label">Tools</div>
-          <div class="nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            Code
+        <div class="sb-section" id="sec-tools">
+          <div class="sb-section-header" onclick="toggleSection('sec-tools')">
+            <span class="sb-section-label">Tools</span>
+            <span class="sb-section-arrow">▾</span>
           </div>
-          <div class="nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Search
-          </div>
-          <div class="nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Documents
-            <span class="nav-badge">soon</span>
+          <div class="sb-section-body">
+            <div class="nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              Code
+            </div>
+            <div class="nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Search
+            </div>
+            <div class="nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Documents
+              <span class="nav-badge">soon</span>
+            </div>
           </div>
         </div>
 
         <div class="sidebar-divider"></div>
 
         <!-- System -->
-        <div class="sb-section">
-          <div class="sb-section-label">System</div>
-          <div class="nav-item" onclick="toggleSettings()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            Settings
-            <span class="nav-badge alert" id="settings-badge" style="display:none">!</span>
+        <div class="sb-section" id="sec-system">
+          <div class="sb-section-header" onclick="toggleSection('sec-system')">
+            <span class="sb-section-label">System</span>
+            <span class="sb-section-arrow">▾</span>
           </div>
-          <div class="nav-item danger" onclick="clearFeed()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            Clear chat
+          <div class="sb-section-body">
+            <div class="nav-item" id="settings-nav" onclick="toggleSettings()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Settings
+              <span class="nav-badge alert" id="settings-badge" style="display:none">!</span>
+            </div>
+            <div class="nav-item danger" onclick="clearFeed()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              Clear chat
+            </div>
           </div>
         </div>
 
@@ -590,6 +771,17 @@
 
       </div><!-- .sidebar-scroll -->
 
+      <!-- Progress bar -->
+      <div id="sidebar-progress">
+        <div id="sidebar-progress-header">
+          <span id="sidebar-progress-label">Session</span>
+          <span id="sidebar-progress-count">0 / 50 msgs</span>
+        </div>
+        <div id="sidebar-progress-track">
+          <div id="sidebar-progress-fill"></div>
+        </div>
+      </div>
+
       <div id="sidebar-user">
         <div id="sidebar-avatar">K</div>
         <div id="sidebar-user-info">
@@ -601,38 +793,70 @@
 
     <!-- Main -->
     <div id="main">
-      <div id="feed">
-        <div id="scroll-track"><div id="scroll-thumb"></div></div>
-        <div id="feed-inner">
-          <div id="empty">
-            <div id="empty-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-              </svg>
+
+      <!-- Tabs -->
+      <div id="tabs-bar">
+        <button class="tab-btn active" id="tab-chat-btn" onclick="switchTab('chat')">
+          Chat
+          <span class="tab-shortcut">⌘1</span>
+        </button>
+        <button class="tab-btn" id="tab-context-btn" onclick="switchTab('context')">
+          Context
+          <span class="tab-shortcut">⌘2</span>
+        </button>
+      </div>
+
+      <!-- Chat tab -->
+      <div id="tab-chat">
+        <div id="feed">
+          <div id="scroll-track"><div id="scroll-thumb"></div></div>
+          <div id="feed-inner">
+            <div id="empty">
+              <div id="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                </svg>
+              </div>
+              <div id="empty-title">Ask Kai anything</div>
+              <div id="empty-sub">send a message to begin</div>
             </div>
-            <div id="empty-title">Ask Kai anything</div>
-            <div id="empty-sub">send a message to begin</div>
+          </div>
+        </div>
+
+        <div id="input-bar">
+          <div id="input-card">
+            <span id="input-label"><span id="label-text">Message</span><span class="label-cursor"></span></span>
+            <div id="input-row">
+              <div id="input" contenteditable="true" spellcheck="false" data-placeholder="Type here..." role="textbox" aria-multiline="true"></div>
+              <button id="send-btn" onclick="handleSend()" aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </div>
+            <div id="input-footer">
+              <div id="input-shortcuts">
+                <span class="kbd-chip"><kbd>↵</kbd> send</span>
+                <span class="kbd-sep">·</span>
+                <span class="kbd-chip"><kbd>⇧</kbd><kbd>↵</kbd> newline</span>
+                <span class="kbd-sep">·</span>
+                <span class="kbd-chip"><kbd>⌘K</kbd> focus</span>
+              </div>
+              <div id="char-count">0</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div id="input-bar">
-        <div id="input-card">
-          <span id="input-label"><span id="label-text">Message</span><span class="label-cursor"></span></span>
-          <div id="input-row">
-            <div id="input" contenteditable="true" spellcheck="false" data-placeholder="Type here..." role="textbox" aria-multiline="true"></div>
-            <button id="send-btn" onclick="handleSend()" aria-label="Send">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
-            </button>
-          </div>
-          <div id="input-footer">
-            <div id="input-hint">Enter to send · Shift+Enter for new line</div>
-            <div id="char-count">0</div>
-          </div>
+      <!-- Context tab -->
+      <div id="tab-context">
+        <div id="context-inner">
+          <div id="context-title">System Prompt / Context</div>
+          <textarea id="system-prompt-area" placeholder="Add a system prompt or context that KAI should follow in this session..."></textarea>
+          <div id="context-meta">This context is sent with every message in the session.</div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -641,7 +865,8 @@
   const startTime = Date.now();
   let isThinking  = false;
   let msgCount    = 0;
-  let lastMsgTime = null; // for time dividers
+  let lastMsgTime = null;
+  const MSG_LIMIT = 50;
 
   // ── Clock & uptime ──────────────────────────────────────────
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -659,7 +884,6 @@
     const up = formatUptime(Date.now() - startTime);
     document.getElementById('uptime').textContent = `up ${up}`;
 
-    // Session time in welcome block
     const sec = Math.floor((Date.now() - startTime) / 1000);
     let st = sec < 60 ? 'just now'
            : sec < 3600 ? `${Math.floor(sec/60)}m ago`
@@ -681,25 +905,63 @@
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('sidebar-overlay').classList.toggle('open');
   }
+
+  function toggleSection(id) {
+    document.getElementById(id).classList.toggle('collapsed');
+  }
+
   function toggleSettings() {
     document.getElementById('settings-panel').classList.toggle('open');
   }
 
-  // API key badge
+  function openSettings() {
+    const sec = document.getElementById('sec-system');
+    sec.classList.remove('collapsed');
+    document.getElementById('settings-panel').classList.add('open');
+    document.getElementById('settings-nav').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── API Banner ──────────────────────────────────────────────
+  function dismissBanner() {
+    document.getElementById('api-banner').classList.add('hidden');
+  }
+
   function onApiKeyInput() {
     const val = document.getElementById('api-key-input').value.trim();
-    document.getElementById('settings-badge').style.display = val ? 'none' : '';
+    const badge = document.getElementById('settings-badge');
+    badge.style.display = val ? 'none' : '';
+    if (val) document.getElementById('api-banner').classList.add('hidden');
+    else document.getElementById('api-banner').classList.remove('hidden');
   }
-  // Show badge initially
   document.getElementById('settings-badge').style.display = '';
+
+  // ── Pin / Star ──────────────────────────────────────────────
+  function togglePin() {
+    document.getElementById('bc-star').classList.toggle('pinned');
+  }
+
+  // ── Tabs ─────────────────────────────────────────────────────
+  function switchTab(tab) {
+    const isChat = tab === 'chat';
+    document.getElementById('tab-chat-btn').classList.toggle('active', isChat);
+    document.getElementById('tab-context-btn').classList.toggle('active', !isChat);
+    document.getElementById('tab-chat').style.display    = isChat ? 'flex' : 'none';
+    document.getElementById('tab-context').style.display = isChat ? 'none' : 'flex';
+  }
+
+  // ── Progress bar ────────────────────────────────────────────
+  function updateProgress() {
+    const pct = Math.min((msgCount / MSG_LIMIT) * 100, 100);
+    document.getElementById('sidebar-progress-fill').style.width = pct + '%';
+    document.getElementById('sidebar-progress-count').textContent = `${msgCount} / ${MSG_LIMIT} msgs`;
+  }
+  updateProgress();
 
   // ── Feed ─────────────────────────────────────────────────────
   function scrollToBottom() {
     const feed = document.getElementById('feed');
     feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
   }
-
-  function updateMsgCount() {}
 
   function nowStr() {
     const n = new Date();
@@ -708,7 +970,6 @@
 
   function maybeAddDivider(wrap) {
     const now = Date.now();
-    // Add divider if first message or >2 min since last
     if (!lastMsgTime || now - lastMsgTime > 120000) {
       const div = document.createElement('div');
       div.className = 'time-divider';
@@ -728,9 +989,8 @@
     const msg = document.createElement('div');
     msg.className = `msg from-${role}`;
     msg.id = `msg-${++msgCount}`;
-    updateMsgCount();
+    updateProgress();
 
-    // 4. Time on hover
     const time = document.createElement('div');
     time.className = 'msg-time';
     time.textContent = nowStr();
@@ -762,7 +1022,7 @@
     const msg = document.createElement('div');
     msg.className = 'msg from-agent';
     msg.id = `msg-${++msgCount}`;
-    updateMsgCount();
+    updateProgress();
 
     const time = document.createElement('div');
     time.className = 'msg-time';
@@ -800,7 +1060,6 @@
       await sleep(delay);
     }
     cursor.remove();
-    // 2. После typewrite — подсветить > строки
     renderAgentBody(el, text);
   }
 
@@ -808,29 +1067,26 @@
     el.innerHTML = '';
     for (const line of text.split('\n')) {
       const span = document.createElement('span');
-      if (line.startsWith('>')) {
-        span.className = 'msg-line-cmd';
-      }
+      if (line.startsWith('>')) span.className = 'msg-line-cmd';
       span.textContent = line;
       el.appendChild(span);
       el.appendChild(document.createTextNode('\n'));
     }
   }
 
-  // 6. Scroll thumb
   function updateScrollThumb() {
     const feed  = document.getElementById('feed');
     const thumb = document.getElementById('scroll-thumb');
     if (!feed || !thumb) return;
-    const ratio  = feed.clientHeight / feed.scrollHeight;
-    const top    = (feed.scrollTop / feed.scrollHeight) * feed.clientHeight;
+    const ratio = feed.clientHeight / feed.scrollHeight;
+    const top   = (feed.scrollTop / feed.scrollHeight) * feed.clientHeight;
     thumb.style.height = Math.max(ratio * feed.clientHeight, 24) + 'px';
     thumb.style.top    = top + 'px';
   }
   document.getElementById('feed').addEventListener('scroll', updateScrollThumb);
 
   function clearFeed() {
-    msgCount = 0; lastMsgTime = null; updateMsgCount();
+    msgCount = 0; lastMsgTime = null; updateProgress();
     const wrap = document.getElementById('feed-inner');
     wrap.innerHTML = `
       <div id="empty">
@@ -843,13 +1099,12 @@
   // ── Input ────────────────────────────────────────────────────
   const input   = document.getElementById('input');
   const sendBtn = document.getElementById('send-btn');
-
   const inputCard = document.getElementById('input-card');
   const labelText = document.getElementById('label-text');
   let typingTimer = null;
 
   function getInputText() {
-    return input.innerText.replace(/ /g, ' ').replace(/\n$/, '');
+    return input.innerText.replace(/ /g, ' ').replace(/\n$/, '');
   }
 
   function onInputChange() {
@@ -898,8 +1153,8 @@
     for (const ch of text) {
       const span = document.createElement('span');
       span.className = 'ch';
-      if (ch === '\n') { span.appendChild(document.createElement('br')); }
-      else span.textContent = ch;
+      if (ch === '\n') span.appendChild(document.createElement('br'));
+      else span.textContent = ch === ' ' ? ' ' : ch;
       range.insertNode(span);
       range.setStartAfter(span);
       range.collapse(true);
@@ -907,6 +1162,17 @@
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
     onInputChange();
+  });
+
+  // ── Global keyboard shortcuts ────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      switchTab('chat');
+      input.focus();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === '1') { e.preventDefault(); switchTab('chat'); }
+    if ((e.metaKey || e.ctrlKey) && e.key === '2') { e.preventDefault(); switchTab('context'); }
   });
 
   // ── Send ─────────────────────────────────────────────────────
@@ -926,8 +1192,10 @@
     await sleep(500);
     const { body } = addProcessing();
     await sleep(1500);
+    const systemPrompt = document.getElementById('system-prompt-area').value.trim();
+    const ctx = systemPrompt ? `\n> system prompt loaded (${systemPrompt.length} chars)` : '';
     const full =
-      `> analyzing input...\n> retrieving context...\n> generating response...\n\n` +
+      `> analyzing input...\n> retrieving context...${ctx}\n> generating response...\n\n` +
       `I received: "${userText}"\n\nThis is a demo. Connect a real API inside sendToAgent() to activate.`;
     body.textContent = '';
     await typewrite(body, full, 18);
