@@ -1,11 +1,11 @@
-import db from './db.js';
+import { readJSON, writeJSON } from './storage.js';
 
 export function getMemoryContext() {
-  const core    = db.prepare('SELECT content FROM memory_core  WHERE id = 1').get();
-  const profile = db.prepare('SELECT content FROM user_profile WHERE id = 1').get();
+  const core    = readJSON('memory_core.json', { content: '' });
+  const profile = readJSON('profile.json',     { content: '' });
 
-  const coreText    = core?.content?.trim()    || '';
-  const profileText = profile?.content?.trim() || '';
+  const coreText    = core.content?.trim()    || '';
+  const profileText = profile.content?.trim() || '';
 
   if (!coreText && !profileText) return '';
 
@@ -16,20 +16,19 @@ export function getMemoryContext() {
 }
 
 export function saveMessage(sessionId, role, content) {
-  db.prepare(
-    'INSERT INTO sessions (session_id, role, content, created_at) VALUES (?, ?, ?, ?)'
-  ).run(sessionId, role, content, Date.now());
+  let sessions = readJSON('sessions.json', []);
+  sessions.push({ sessionId, role, content, ts: Date.now() });
+  if (sessions.length > 2000) sessions = sessions.slice(-2000);
+  writeJSON('sessions.json', sessions);
 }
 
 export function getRecentSessions(sinceDays = 3) {
-  const since = Date.now() - sinceDays * 24 * 60 * 60 * 1000;
-  return db.prepare(
-    'SELECT * FROM sessions WHERE created_at >= ? ORDER BY created_at ASC'
-  ).all(since);
+  const since = Date.now() - sinceDays * 86400000;
+  return readJSON('sessions.json', [])
+    .filter(m => m.ts >= since)
+    .sort((a, b) => a.ts - b.ts);
 }
 
 export function updateMemoryCore(newContent) {
-  db.prepare(
-    'UPDATE memory_core SET content = ?, updated_at = ? WHERE id = 1'
-  ).run(newContent, Date.now());
+  writeJSON('memory_core.json', { content: newContent, updatedAt: Date.now() });
 }
