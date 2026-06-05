@@ -254,10 +254,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         letter-spacing: -0.02em !important;
       }
 
-      /* Muted text */
+      /* Subtitle under main heading — item 2 */
       [class*="muted"], [class*="Muted"], [class*="subtitle"], [class*="hint"],
-      [class*="placeholder"], [class*="description"] {
-        color: #6060A0 !important;
+      [class*="description"], [class*="subheading"], [class*="caption"] {
+        color: #6B6B80 !important;
+      }
+
+      /* Main area padding-bottom so input bar never clips — item 4 */
+      main, [class*="main"], [role="main"], [class*="content"], [class*="Content"] {
+        padding-bottom: 24px !important;
       }
 
       /* Dividers */
@@ -294,6 +299,43 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
       window.Babel.transformScriptTags();
     }
+
+    // DOM patches — run after React mounts
+    const __domPatch = () => {
+      // 5. Remove sidebar search bar
+      document.querySelectorAll('aside input[type="search"], aside input[placeholder], nav input, [class*="sidebar"] input, [class*="Sidebar"] input').forEach(el => {
+        const wrapper = el.closest('[class*="search"]') || el.closest('[class*="Search"]') || el.parentElement;
+        if (wrapper) wrapper.style.display = 'none';
+      });
+
+      // 3. Add category tags to suggestion cards
+      const tagDefs = [
+        { match: 'draft', label: 'DRAFT' },
+        { match: 'plan', label: 'PLAN' },
+        { match: 'explain', label: 'EXPLAIN' },
+        { match: 'rewrite', label: 'REWRITE' },
+      ];
+      const tagStyle = 'font-family:monospace;font-size:10px;font-weight:500;text-transform:uppercase;color:#4A4A60;margin-bottom:8px;display:block;';
+      document.querySelectorAll('button, [role="button"], [class*="card"], [class*="Card"], [class*="suggestion"], [class*="prompt"]').forEach(el => {
+        if (el.querySelector('[data-kai-tag]')) return;
+        const text = (el.textContent || '').toLowerCase();
+        const def = tagDefs.find(d => text.startsWith(d.match) || text.includes(d.match + ' '));
+        if (!def) return;
+        // only target small cards (not huge containers)
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 500 || rect.height > 200) return;
+        const tag = document.createElement('span');
+        tag.setAttribute('data-kai-tag', '1');
+        tag.style.cssText = tagStyle;
+        tag.textContent = def.label;
+        el.insertBefore(tag, el.firstChild);
+      });
+    };
+
+    setTimeout(__domPatch, 300);
+    setTimeout(__domPatch, 800);
+    setTimeout(__domPatch, 2000);
+
   } catch (err) {
     setStatus('Error unpacking: ' + err.message);
     console.error('Bundle unpack error:', err);
