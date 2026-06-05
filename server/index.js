@@ -11,18 +11,26 @@ const ALLOWED_ORIGINS = [
   'https://kmbytv.github.io',
   'http://localhost:3000',
   'http://localhost:5500',
+  'http://localhost:8080',
+  'http://127.0.0.1:3000',
   'http://127.0.0.1:5500',
+  'http://127.0.0.1:8080',
 ];
 
-app.use(cors({
+const corsOptions = {
   origin(origin, cb) {
-    // Allow requests with no origin (curl, Postman, etc.)
+    // Allow requests with no origin (curl, Postman, mobile apps, etc.)
     if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
     cb(new Error(`CORS: origin ${origin} not allowed`));
   },
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type'],
-}));
+  optionsSuccessStatus: 204,
+};
+
+// Handle preflight for all routes before any other middleware
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
