@@ -358,46 +358,6 @@
     /* ── Main ──────────────────────────────────────────────────── */
     #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
-    /* ── Tabs — pill segment ───────────────────────────────────── */
-    #tabs-bar {
-      flex-shrink: 0;
-      display: flex; align-items: center;
-      padding: 10px 32px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-    }
-    #tabs-segment {
-      display: flex;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 3px;
-      gap: 2px;
-    }
-    .tab-btn {
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 14px;
-      font-size: 12px; font-weight: 500;
-      color: var(--text-muted);
-      border-radius: 6px;
-      transition: color 0.15s, background 0.15s, box-shadow 0.15s;
-    }
-    .tab-btn:hover { color: var(--text-secondary); }
-    .tab-btn.active {
-      color: var(--text-primary);
-      background: var(--surface-raise);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
-    }
-    .tab-shortcut {
-      font-family: var(--font-mono); font-size: 9px;
-      padding: 1px 5px; border-radius: 3px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-    }
-    .tab-btn.active .tab-shortcut { border-color: var(--border); color: var(--accent-dim); }
-
     /* ── Tab panels ────────────────────────────────────────────── */
     #tab-chat    { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     #tab-context { flex: 1; display: flex; flex-direction: column; overflow: hidden; display: none; }
@@ -956,7 +916,6 @@
       #input-bar { padding: 8px 12px 14px; }
       #input-pill-wrap { max-width: 100%; }
       #input-footer { max-width: 100%; }
-      #tabs-bar { padding: 0 16px; }
       #api-banner { padding: 8px 16px; }
     }
   </style>
@@ -1034,6 +993,33 @@
       </div>
 
       <div class="sidebar-scroll">
+
+        <!-- Views -->
+        <div class="sb-section" id="sec-views">
+          <div class="sb-section-header" onclick="toggleSection('sec-views')">
+            <span class="sb-section-label">Views</span>
+            <span class="sb-section-arrow">▾</span>
+          </div>
+          <div class="sb-section-body">
+            <div class="nav-item active" id="tab-chat-btn" onclick="switchTab('chat')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Chat
+              <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘1</span>
+            </div>
+            <div class="nav-item" id="tab-context-btn" onclick="switchTab('context')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Context
+              <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘2</span>
+            </div>
+            <div class="nav-item" id="tab-code-btn" onclick="switchTab('code')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              Code
+              <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘3</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-divider"></div>
 
         <!-- Sessions -->
         <div class="sb-section" id="sec-sessions">
@@ -1131,24 +1117,6 @@
 
     <!-- Main -->
     <div id="main">
-
-      <!-- Tabs -->
-      <div id="tabs-bar">
-        <div id="tabs-segment">
-          <button class="tab-btn active" id="tab-chat-btn" onclick="switchTab('chat')">
-            Chat
-            <span class="tab-shortcut">⌘1</span>
-          </button>
-          <button class="tab-btn" id="tab-context-btn" onclick="switchTab('context')">
-            Context
-            <span class="tab-shortcut">⌘2</span>
-          </button>
-          <button class="tab-btn" id="tab-code-btn" onclick="switchTab('code')">
-            Code
-            <span class="tab-shortcut">⌘3</span>
-          </button>
-        </div>
-      </div>
 
       <!-- Chat tab -->
       <div id="tab-chat">
@@ -1362,6 +1330,8 @@
       btn.classList.toggle('active', active);
       panel.style.display = active ? (t === 'code' ? 'block' : 'flex') : 'none';
     });
+    // Close sidebar on mobile after switching
+    if (window.innerWidth <= 640) toggleSidebar();
   }
 
   // ── Code tab ─────────────────────────────────────────────────
