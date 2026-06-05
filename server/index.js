@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import OpenAI from 'openai';
+import client from './openrouter.js';
 import { executeTool } from './tools/code.js';
+import { getMemoryContext, saveMessage } from './memory.js';
+import './cron.js';
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -31,16 +33,6 @@ const corsOptions = {
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json());
-
-// ── OpenRouter client ───────────────────────────────────────────
-const client = new OpenAI({
-  apiKey:  process.env.OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-  defaultHeaders: {
-    'HTTP-Referer': 'https://kmbytv.github.io/icarus/',
-    'X-Title':      'KAI Agent',
-  },
-});
 
 // ── System prompt with tool descriptions ────────────────────────
 const TOOLS_SYSTEM = `You are KAI, a personal AI agent. You have access to three tools you can invoke at any point in your response.
@@ -116,8 +108,10 @@ app.post('/chat', async (req, res) => {
   try {
     const history = getHistory(sessionId);
 
-    // Build system prompt: tools description + optional user-supplied prompt
+    // Build system prompt: memory context + tools description + optional user-supplied prompt
+    const memoryContext = getMemoryContext();
     const sysContent = [
+      memoryContext ? `## Контекст из памяти\n${memoryContext}\n` : '',
       TOOLS_SYSTEM,
       systemPrompt?.trim() ? `\nAdditional instructions:\n${systemPrompt.trim()}` : '',
     ].join('');
@@ -195,6 +189,10 @@ app.post('/chat', async (req, res) => {
     history.push({ role: 'user',      content: message.trim() });
     history.push({ role: 'assistant', content: fullAssistantText });
     if (history.length > 40) history.splice(0, history.length - 40);
+
+    // Persist to long-term SQLite memory
+    saveMessage(sessionId, 'user',      message.trim());
+    saveMessage(sessionId, 'assistant', fullAssistantText);
 
     send({ type: 'done' });
     res.end();
