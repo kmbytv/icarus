@@ -284,9 +284,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         color: #6B6B80 !important;
       }
 
-      /* Neutralise any element whose computed colour is a blue/purple shade.
-         We can't runtime-grep compiled CSS, so we override common utility
-         classes that React apps generate for those hues. */
+      /* Neutralise blue/purple on text utility classes */
       [class*="blue"], [class*="Blue"],
       [class*="indigo"], [class*="Indigo"],
       [class*="purple"], [class*="Purple"],
@@ -297,11 +295,40 @@ document.addEventListener('DOMContentLoaded', async function() {
         color: #8888A0 !important;
       }
 
-      /* Ensure primary body text never gets a blue/purple */
-      p, span, li, td, th, label, small, strong, em, a {
-        color: inherit;
+      /* SVG icons — override fill/stroke so purple icons become neutral */
+      aside svg path, aside svg circle, aside svg rect, aside svg ellipse, aside svg polyline, aside svg line,
+      nav svg path, nav svg circle, nav svg rect, nav svg ellipse, nav svg polyline, nav svg line,
+      [class*="sidebar"] svg path, [class*="sidebar"] svg circle, [class*="sidebar"] svg rect,
+      [class*="Sidebar"] svg path, [class*="Sidebar"] svg circle, [class*="Sidebar"] svg rect,
+      [class*="icon"] svg path, [class*="Icon"] svg path,
+      [class*="chat-icon"] svg *, [class*="chatIcon"] svg *,
+      [class*="thread"] svg *, [class*="Thread"] svg * {
+        fill: #3A3A4A !important;
+        stroke: none !important;
       }
-      /* Re-assert safe palette on main text nodes */
+
+      /* Keep the send-button icon white */
+      button[class*="send"] svg path,
+      button[class*="Send"] svg path,
+      [class*="sendBtn"] svg path,
+      [class*="submit"] svg path {
+        fill: #EFEFEF !important;
+      }
+
+      /* Avatar circles — neutral, not purple */
+      [class*="avatar"], [class*="Avatar"],
+      [class*="user-icon"], [class*="userIcon"] {
+        background: #2A2A3A !important;
+        color: #8888A0 !important;
+      }
+
+      /* Section labels (PINNED, RECENT) */
+      [class*="section"], [class*="Section"],
+      [class*="group-label"], [class*="groupLabel"] {
+        color: #3A3A4A !important;
+      }
+
+      /* Re-assert safe palette on main text */
       body, main, [role="main"], [class*="content"], [class*="Content"] {
         color: #E8E8F0 !important;
       }
