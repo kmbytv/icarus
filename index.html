@@ -210,8 +210,8 @@
     }
     #sidebar {
       width: var(--sidebar-w); flex-shrink: 0;
-      background: var(--surface-side);
-      border-right: 1px solid var(--border);
+      background: #060A07;
+      border-right: 1px solid #1E3025;
       display: flex; flex-direction: column;
       overflow: hidden; z-index: 201;
     }
@@ -219,6 +219,7 @@
     /* Welcome block */
     #sidebar-welcome {
       padding: 20px 18px 16px;
+      background: #060A07;
       border-bottom: 1px solid var(--border-soft);
     }
     #sidebar-welcome-name {
@@ -893,20 +894,15 @@
       position: relative;
       display: flex; align-items: center; gap: 0;
       border-radius: 100px;
-      /* Glass layers: dark translucent bg + blur */
-      background: rgba(28, 28, 28, 0.82);
+      background: rgba(14, 22, 16, 0.92);
       backdrop-filter: blur(20px) saturate(1.4);
       -webkit-backdrop-filter: blur(20px) saturate(1.4);
-      /* Multi-layer border: top highlight + subtle outer ring */
-      border: 1px solid rgba(255,255,255,0.07);
+      border: 1px solid rgba(46,204,113,0.12);
       box-shadow:
-        /* top inner highlight — the "glass shine" */
-        inset 0 1px 0 rgba(255,255,255,0.10),
-        /* bottom inner shadow for depth */
-        inset 0 -1px 0 rgba(0,0,0,0.35),
-        /* outer drop shadow */
-        0 8px 32px rgba(0,0,0,0.55),
-        0 2px 8px rgba(0,0,0,0.35);
+        inset 0 1px 0 rgba(46,204,113,0.08),
+        inset 0 -1px 0 rgba(0,0,0,0.4),
+        0 8px 32px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(46,204,113,0.04);
       transition: box-shadow 0.2s, border-color 0.2s;
       overflow: hidden;
       padding: 0 6px 0 22px;
