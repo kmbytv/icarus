@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Variables ─────────────────────────────────────────────── */
+    :root {
+      --bg:             #111008;
+      --surface:        #1A1810;
+      --surface-user:   #0E0C06;
+      --surface-side:   #1E1C12;
+      --border:         #2A2618;
+      --text-primary:   #F0EEE8;
+      --text-secondary: #9A9488;
+      --text-muted:     #5A5448;
+      --accent:         #C8A96E;
+      --accent-dim:     #9A7E4E;
+      --font-mono:      'JetBrains Mono', monospace;
+      --font-ui:        'DM Sans', sans-serif;
+      --header-h:       48px;
+      --input-h:        64px;
+      --sidebar-w:      240px;
+      --radius:         6px;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text-primary); font-family: var(--font-ui); font-size: 15px; -webkit-font-smoothing: antialiased; }
+    button { cursor: pointer; border: none; background: none; font-family: var(--font-ui); color: inherit; }
+    textarea { resize: none; border: none; outline: none; font-family: var(--font-ui); font-size: 15px; color: var(--text-primary); background: transparent; }
+    ::selection { background: var(--accent); color: var(--bg); }
+    ::-webkit-scrollbar { display: none; }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    #header {
+      flex-shrink: 0;
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      z-index: 100;
+    }
+    #header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    #burger {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      padding: 4px;
+      opacity: 0.6;
+      transition: opacity 0.15s;
+    }
+    #burger:hover { opacity: 1; }
+    #burger span {
+      display: block;
+      width: 18px;
+      height: 1.5px;
+      background: var(--text-primary);
+      border-radius: 2px;
+    }
+    #logo {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      letter-spacing: 0.12em;
+    }
+    #status {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.06em;
+    }
+    #status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #6EAF6E;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    #status-dot.thinking {
+      background: var(--accent);
+      animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+    #header-right {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Body (sidebar + main) ─────────────────────────────────── */
+    #body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    #sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+    }
+    #sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--surface-side);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 201;
+    }
+    .sidebar-section {
+      padding: 20px 16px 8px;
+    }
+    .sidebar-label {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px;
+    }
+    .chat-item {
+      padding: 7px 8px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.1s, color 0.1s;
+    }
+    .chat-item:hover { background: rgba(200,169,110,0.08); color: var(--text-primary); }
+    .chat-item.active { background: rgba(200,169,110,0.12); color: var(--accent); }
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 16px;
+    }
+    .sidebar-bottom {
+      padding: 12px 8px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-btn {
+      width: 100%;
+      padding: 7px 8px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.1s, color 0.1s;
+    }
+    .sidebar-btn:hover { background: rgba(200,169,110,0.08); color: var(--text-primary); }
+    .sidebar-btn.danger:hover { color: #C86E6E; }
+
+    /* Settings panel inside sidebar */
+    #settings-panel {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+    #settings-panel.open { display: flex; }
+    .setting-row label {
+      display: block;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .setting-row input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 10px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .setting-row input:focus { border-color: var(--accent-dim); }
+    .setting-row input::placeholder { color: var(--text-muted); }
+
+    /* ── Main ──────────────────────────────────────────────────── */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ── Feed ──────────────────────────────────────────────────── */
+    #feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 0 24px;
+      scroll-behavior: smooth;
+    }
+    #feed-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .msg {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .msg:last-child { border-bottom: none; }
+    .msg-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .msg-body {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.from-user { background: transparent; }
+    .msg.from-agent .msg-body {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    .msg.from-agent .msg-label { color: var(--accent-dim); }
+
+    /* Typewriter cursor */
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1em;
+      background: var(--accent);
+      vertical-align: text-bottom;
+      margin-left: 2px;
+      animation: blink 0.8s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* Processing state */
+    .processing {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .processing::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    /* Empty state */
+    #empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 8px;
+      pointer-events: none;
+    }
+    #empty-title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+    #empty-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+
+    /* ── Input bar ─────────────────────────────────────────────── */
+    #input-bar {
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      padding: 12px 24px 16px;
+      background: var(--bg);
+    }
+    #input-wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      transition: border-color 0.15s;
+    }
+    #input-wrap:focus-within { border-color: var(--accent-dim); }
+    #input {
+      flex: 1;
+      min-height: 24px;
+      max-height: 120px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      overflow-y: auto;
+    }
+    #input::placeholder { color: var(--text-muted); }
+    #send-btn {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      transition: color 0.15s, background 0.15s;
+    }
+    #send-btn.ready {
+      color: var(--accent);
+    }
+    #send-btn:hover.ready {
+      background: rgba(200,169,110,0.12);
+    }
+    #send-btn svg { width: 16px; height: 16px; }
+
+    /* ── Mobile ────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      #burger { display: flex; }
+      #header-right { display: none; }
+      #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+      }
+      #sidebar.open { transform: translateX(0); }
+      #sidebar-overlay.open { display: block; }
+      #feed-inner { padding: 0 16px; }
+      #input-bar { padding: 10px 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Header -->
+  <header id="header">
+    <div id="header-left">
+      <button id="burger" aria-label="Menu" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
+      <span id="logo">KAI</span>
+      <div id="status">
+        <span id="status-dot"></span>
+        <span id="status-text">ONLINE</span>
+      </div>
+    </div>
+    <div id="header-right">
+      <span id="clock">--:--:--</span>
+      <span id="uptime">up 0:00</span>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div id="body">
+
+    <!-- Sidebar overlay (mobile) -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <nav id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Chats</div>
+      </div>
+      <div class="sidebar-scroll" id="chat-list">
+        <div class="chat-item active">New session</div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-bottom">
+        <button class="sidebar-btn" onclick="toggleSettings()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+        <button class="sidebar-btn danger" onclick="clearFeed()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Clear
+        </button>
+      </div>
+      <div id="settings-panel">
+        <div class="setting-row">
+          <label>API Key</label>
+          <input type="password" id="api-key-input" placeholder="sk-ant-...">
+        </div>
+        <div class="setting-row">
+          <label>Model</label>
+          <input type="text" id="model-input" value="claude-opus-4-8" placeholder="model id">
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <div id="main">
+      <div id="feed">
+        <div id="feed-inner">
+          <div id="empty">
+            <span id="empty-title">KAI READY</span>
+            <span id="empty-sub">send a message to begin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input bar -->
+      <div id="input-bar">
+        <div id="input-wrap">
+          <textarea id="input" rows="1" placeholder="message..." spellcheck="false"></textarea>
+          <button id="send-btn" onclick="handleSend()" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── State ───────────────────────────────────────────────────────
+  const startTime = Date.now();
+  let isThinking  = false;
+  let msgCount    = 0;
+
+  // ── Clock & uptime ──────────────────────────────────────────────
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    const sec  = Math.floor((Date.now() - startTime) / 1000);
+    const h    = Math.floor(sec / 3600);
+    const m    = Math.floor((sec % 3600) / 60);
+    const s    = sec % 60;
+    document.getElementById('uptime').textContent =
+      h ? `up ${h}:${pad(m)}:${pad(s)}` : `up ${m}:${pad(s)}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── Status ──────────────────────────────────────────────────────
+  function setStatus(thinking) {
+    isThinking = thinking;
+    const dot  = document.getElementById('status-dot');
+    const txt  = document.getElementById('status-text');
+    dot.classList.toggle('thinking', thinking);
+    txt.textContent = thinking ? 'THINKING' : 'ONLINE';
+  }
+
+  // ── Sidebar ─────────────────────────────────────────────────────
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+  }
+
+  function toggleSettings() {
+    document.getElementById('settings-panel').classList.toggle('open');
+  }
+
+  // ── Feed ─────────────────────────────────────────────────────────
+  function scrollToBottom() {
+    const feed = document.getElementById('feed');
+    feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
+  }
+
+  function addMessage(role, text) {
+    const empty = document.getElementById('empty');
+    if (empty) empty.remove();
+
+    const wrap = document.getElementById('feed-inner');
+    const msg  = document.createElement('div');
+    msg.className = `msg from-${role}`;
+    msg.id = `msg-${++msgCount}`;
+
+    const label = document.createElement('div');
+    label.className = 'msg-label';
+    label.textContent = role === 'user' ? 'YOU' : 'KAI';
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    body.textContent = text;
+
+    msg.appendChild(label);
+    msg.appendChild(body);
+    wrap.appendChild(msg);
+    scrollToBottom();
+    return body;
+  }
+
+  function addProcessing() {
+    const empty = document.getElementById('empty');
+    if (empty) empty.remove();
+
+    const wrap = document.getElementById('feed-inner');
+    const msg  = document.createElement('div');
+    msg.className = 'msg from-agent';
+    msg.id = `msg-${++msgCount}`;
+
+    const label = document.createElement('div');
+    label.className = 'msg-label';
+    label.textContent = 'KAI';
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+
+    const proc = document.createElement('span');
+    proc.className = 'processing';
+    proc.textContent = 'processing...';
+    body.appendChild(proc);
+
+    msg.appendChild(label);
+    msg.appendChild(body);
+    wrap.appendChild(msg);
+    scrollToBottom();
+    return { msg, body };
+  }
+
+  async function typewrite(el, text, delay = 20) {
+    el.textContent = '';
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    el.appendChild(cursor);
+
+    for (const char of text) {
+      cursor.insertAdjacentText('beforebegin', char);
+      scrollToBottom();
+      await sleep(delay);
+    }
+    cursor.remove();
+  }
+
+  function clearFeed() {
+    const wrap = document.getElementById('feed-inner');
+    wrap.innerHTML = '';
+    const empty = document.createElement('div');
+    empty.id = 'empty';
+    empty.innerHTML = '<span id="empty-title">KAI READY</span><span id="empty-sub">send a message to begin</span>';
+    wrap.appendChild(empty);
+  }
+
+  // ── Input ────────────────────────────────────────────────────────
+  const input   = document.getElementById('input');
+  const sendBtn = document.getElementById('send-btn');
+
+  input.addEventListener('input', () => {
+    // Auto-grow
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    // Toggle send button state
+    sendBtn.classList.toggle('ready', input.value.trim().length > 0);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  });
+
+  // ── Send ─────────────────────────────────────────────────────────
+  function handleSend() {
+    const text = input.value.trim();
+    if (!text || isThinking) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.classList.remove('ready');
+
+    addMessage('user', text);
+    sendToAgent(text);
+  }
+
+  // ── Agent stub ──────────────────────────────────────────────────
+  async function sendToAgent(userText) {
+    setStatus(true);
+
+    await sleep(500);
+    const { msg, body } = addProcessing();
+
+    await sleep(1500);
+
+    // Demo response — replace this block with real API call
+    const steps = [
+      `> analyzing input...\n`,
+      `> retrieving context...\n`,
+      `> generating response...\n\n`,
+    ];
+    const answer = `I received your message: "${userText}"\n\nThis is a demo response. Connect a real API in sendToAgent() to make me useful.`;
+    const full = steps.join('') + answer;
+
+    body.textContent = '';
+    await typewrite(body, full, 18);
+
+    setStatus(false);
+  }
+
+  // ── Utils ────────────────────────────────────────────────────────
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+
+</body>
+</html>
