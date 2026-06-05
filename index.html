@@ -169,9 +169,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Inject Knockturnals-inspired design overrides
     const __styleOverride = doc.createElement('style');
     __styleOverride.id = '__design_override';
-    __styleOverride.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    // Inject Inter font via link tag (works from blob origin)
+    const __fontLink = doc.createElement('link');
+    __fontLink.rel = 'stylesheet';
+    __fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap';
+    doc.head.insertBefore(__fontLink, doc.head.firstChild);
 
+    __styleOverride.textContent = `
       *, *::before, *::after {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
         -webkit-font-smoothing: antialiased;
