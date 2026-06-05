@@ -453,26 +453,69 @@
       color: var(--text-secondary);
     }
 
-    /* Tool event rows */
-    .ctool {
-      display: flex; align-items: center; gap: 8px;
-      font-family: var(--font-mono); font-size: 10px;
-      color: var(--text-muted); padding: 4px 0;
+    /* Tool event rows — route line style */
+    .ctool-chain {
+      display: flex; flex-direction: column;
+      padding: 2px 0 2px 8px;
       animation: ctool-in 0.2s ease both;
     }
     @keyframes ctool-in {
       from { opacity: 0; transform: translateX(-6px); }
       to   { opacity: 1; transform: translateX(0); }
     }
-    .ctool-icon {
-      width: 18px; height: 18px; border-radius: 5px;
-      background: var(--surface-raise); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+    .ctool-chain-label {
+      font-family: var(--font-mono); font-size: 9px;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-muted); opacity: 0.5;
+      margin-bottom: 4px;
     }
-    .ctool-icon svg { width: 9px; height: 9px; color: var(--warn); }
-    .ctool-name { color: var(--warn); }
-    .ctool-detail { color: var(--text-muted); opacity: 0.6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+    .ctool-route {
+      display: flex; flex-direction: column;
+      position: relative; gap: 0;
+    }
+    /* vertical connecting line */
+    .ctool-route::before {
+      content: '';
+      position: absolute; left: 7px; top: 10px; bottom: 10px;
+      width: 1px; background: var(--border);
+    }
+    .ctool-step {
+      display: flex; align-items: center; gap: 10px;
+      padding: 5px 0;
+      font-family: var(--font-mono); font-size: 10px;
+    }
+    .ctool-dot {
+      width: 15px; height: 15px; border-radius: 50%;
+      flex-shrink: 0; z-index: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 7px; font-weight: 600;
+    }
+    .ctool-dot.pending {
+      background: var(--surface-raise); border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .ctool-dot.running {
+      background: rgba(200,169,110,0.15); border: 1px solid var(--warn);
+      color: var(--warn); animation: pulse 1s ease-in-out infinite;
+    }
+    .ctool-dot.done {
+      background: rgba(94,168,94,0.15); border: 1px solid var(--green);
+      color: var(--green);
+    }
+    .ctool-dot.error {
+      background: rgba(224,85,85,0.15); border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+    .ctool-step-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .ctool-step-name { color: var(--text-secondary); font-size: 11px; }
+    .ctool-step-detail {
+      color: var(--text-muted); font-size: 10px; opacity: 0.6;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;
+    }
+    .ctool-step-result {
+      color: var(--green); font-size: 10px; opacity: 0.8;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;
+    }
 
     /* Thinking row */
     .cthink {
@@ -557,17 +600,22 @@
       padding: 10px 20px; border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
+    /* 6. Flat pill sub-tabs (Fleet-style) */
     #code-right-tabs {
-      display: flex; gap: 0;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 6px; padding: 2px; gap: 2px;
+      display: flex; gap: 4px;
     }
     .cr-tab {
-      font-size: 11px; font-weight: 500; padding: 4px 12px;
-      border-radius: 4px; color: var(--text-muted);
-      transition: all 0.15s;
+      font-size: 12px; font-weight: 500;
+      padding: 5px 14px; border-radius: 20px;
+      color: var(--text-muted); background: transparent;
+      transition: background 0.15s, color 0.15s;
     }
-    .cr-tab.active { background: var(--surface-raise); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+    .cr-tab:hover { background: var(--surface-raise); color: var(--text-secondary); }
+    .cr-tab.active {
+      background: var(--surface-raise);
+      color: var(--text-primary);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 3px rgba(0,0,0,0.4);
+    }
     #code-right-actions { display: flex; gap: 6px; }
     .cr-action {
       font-size: 11px; font-weight: 500; padding: 4px 12px;
@@ -1387,21 +1435,56 @@
     return bubble;
   }
 
-  function addCodeTool(toolName, detail) {
+  // Route-line tool chain — one chain per agent turn
+  let _currentChain = null;   // { chainEl, routeEl, steps: Map<toolName+idx, stepEl> }
+  let _chainStepIdx = 0;
+
+  function ensureChain() {
+    if (_currentChain) return _currentChain;
     const feed = document.getElementById('code-feed');
-    const row = document.createElement('div');
-    row.className = 'ctool';
-    row.innerHTML = `
-      <div class="ctool-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
-        </svg>
-      </div>
-      <span class="ctool-name">${toolName}</span>
-      <span class="ctool-detail">${detail ?? ''}</span>`;
-    feed.appendChild(row);
-    feed.scrollTop = feed.scrollHeight;
+    const chain = document.createElement('div');
+    chain.className = 'ctool-chain';
+    chain.innerHTML = `<div class="ctool-chain-label">Tool calls</div><div class="ctool-route"></div>`;
+    feed.appendChild(chain);
+    _currentChain = { chainEl: chain, routeEl: chain.querySelector('.ctool-route'), steps: new Map() };
+    return _currentChain;
   }
+
+  function addCodeTool(toolName, detail) {
+    const chain = ensureChain();
+    const key   = `${toolName}_${_chainStepIdx++}`;
+
+    const step = document.createElement('div');
+    step.className = 'ctool-step';
+    step.innerHTML = `
+      <div class="ctool-dot running">▶</div>
+      <div class="ctool-step-info">
+        <span class="ctool-step-name">${toolName}</span>
+        <span class="ctool-step-detail">${detail ?? ''}</span>
+      </div>`;
+    chain.routeEl.appendChild(step);
+    chain.steps.set(key, step);
+    document.getElementById('code-feed').scrollTop = 99999;
+    return key;
+  }
+
+  function resolveCodeTool(key, result, isError) {
+    if (!_currentChain) return;
+    const step = _currentChain.steps.get(key);
+    if (!step) return;
+    const dot    = step.querySelector('.ctool-dot');
+    const detail = step.querySelector('.ctool-step-detail');
+    dot.className = `ctool-dot ${isError ? 'error' : 'done'}`;
+    dot.textContent = isError ? '✕' : '✓';
+    if (result) {
+      const res = document.createElement('span');
+      res.className = isError ? 'ctool-step-detail' : 'ctool-step-result';
+      res.textContent = String(result).slice(0, 80);
+      detail.after(res);
+    }
+  }
+
+  function resetChain() { _currentChain = null; _chainStepIdx = 0; }
 
   function setCodeStatus(thinking, label = '') {
     codeIsThinking = thinking;
@@ -1490,8 +1573,9 @@
     feed.scrollTop = feed.scrollHeight;
 
     let accumulated = '';
+    let lastToolKey  = null;
     const agentBubble = addCodeMsg('agent', '');
-    // Move agent bubble after thinking row visually (already appended)
+    resetChain();
 
     try {
       const sysPrompt = document.getElementById('system-prompt-area').value.trim();
@@ -1523,13 +1607,15 @@
             accumulated += ev.text;
             agentBubble.textContent = accumulated;
             feed.scrollTop = feed.scrollHeight;
-            // Update thinking label with partial text snippet
             const lbl = document.getElementById('cthink-label');
             if (lbl) lbl.textContent = accumulated.slice(-30).replace(/\n/g, ' ').trim() || 'thinking';
           } else if (ev.type === 'tool_call') {
-            addCodeTool(ev.tool, JSON.stringify(ev.args).slice(0, 60));
+            const argStr = Object.entries(ev.args ?? {}).map(([k,v]) => `${k}: ${String(v).slice(0,30)}`).join(' · ');
+            lastToolKey = addCodeTool(ev.tool, argStr);
           } else if (ev.type === 'tool_result') {
             const resultStr = ev.result?.output ?? ev.result?.content ?? ev.result?.error ?? '';
+            const isError   = !!ev.result?.error;
+            resolveCodeTool(lastToolKey, resultStr.slice(0, 80), isError);
             if (resultStr) showCodeOutput(resultStr);
           } else if (ev.type === 'error') {
             throw new Error(ev.message);
