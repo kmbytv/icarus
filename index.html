@@ -308,22 +308,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         fill: #EFEFEF !important;
       }
 
-      /* Active / selected / hover states — kill all blue/purple backgrounds */
-      [class*="active"], [class*="Active"],
-      [class*="selected"], [class*="Selected"],
-      [class*="current"], [class*="Current"],
-      [aria-selected="true"], [aria-current],
-      [class*="nav-item"][class*="active"],
-      [class*="navItem"][class*="active"] {
-        background: #16161E !important;
-        color: #E8E8F0 !important;
+      /* Wipe ALL backgrounds inside sidebar — every child transparent */
+      aside *, nav *,
+      [class*="sidebar"] *, [class*="Sidebar"] * {
+        background: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
       }
 
-      /* Header/workspace row at top of sidebar */
-      [class*="workspace"], [class*="Workspace"],
-      [class*="header"] > *, [class*="Header"] > *,
-      aside > *:first-child, nav > *:first-child {
-        background: transparent !important;
+      /* Only the sidebar container itself gets a color */
+      aside, nav,
+      [class*="sidebar"], [class*="Sidebar"] {
+        background: #06060E !important;
+        background-color: #06060E !important;
+      }
+
+      /* Active / selected items — subtle highlight only */
+      [class*="active"], [class*="Active"],
+      [class*="selected"], [class*="Selected"],
+      [aria-selected="true"], [aria-current="page"] {
+        background: #12121C !important;
+        background-color: #12121C !important;
+        color: #E8E8F0 !important;
       }
 
       /* Avatar/logo square — keep it dark neutral */
