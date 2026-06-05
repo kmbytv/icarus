@@ -200,6 +200,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         border-right: 1px solid #13132A !important;
       }
 
+      /* Hide sidebar search bar — item 5 */
+      aside [class*="search"], aside [class*="Search"],
+      nav [class*="search"], nav [class*="Search"],
+      [class*="sidebar"] [class*="search"], [class*="Sidebar"] [class*="search"] {
+        display: none !important;
+      }
+
       /* Nav items */
       [class*="nav-item"]:hover, [class*="navItem"]:hover,
       [class*="menu-item"]:hover, [class*="menuItem"]:hover {
@@ -300,41 +307,58 @@ document.addEventListener('DOMContentLoaded', async function() {
       window.Babel.transformScriptTags();
     }
 
-    // DOM patches — run after React mounts
+    // DOM patches — guarded so each element is processed exactly once
+    const __tagDefs = [
+      { match: 'draft', label: 'DRAFT' },
+      { match: 'plan', label: 'PLAN' },
+      { match: 'explain', label: 'EXPLAIN' },
+      { match: 'rewrite', label: 'REWRITE' },
+    ];
+    const __tagStyle = 'font-family:monospace;font-size:10px;font-weight:500;text-transform:uppercase;color:#4A4A60;margin-bottom:8px;display:block;';
+
     const __domPatch = () => {
-      // 5. Remove sidebar search bar
-      document.querySelectorAll('aside input[type="search"], aside input[placeholder], nav input, [class*="sidebar"] input, [class*="Sidebar"] input').forEach(el => {
+      // 5. Hide sidebar search bar via JS (CSS rule also applied above)
+      document.querySelectorAll('input').forEach(el => {
+        const inSidebar = el.closest('aside') || el.closest('nav') ||
+          el.closest('[class*="sidebar"]') || el.closest('[class*="Sidebar"]');
+        if (!inSidebar) return;
         const wrapper = el.closest('[class*="search"]') || el.closest('[class*="Search"]') || el.parentElement;
-        if (wrapper) wrapper.style.display = 'none';
+        if (wrapper) wrapper.style.setProperty('display', 'none', 'important');
       });
 
-      // 3. Add category tags to suggestion cards
-      const tagDefs = [
-        { match: 'draft', label: 'DRAFT' },
-        { match: 'plan', label: 'PLAN' },
-        { match: 'explain', label: 'EXPLAIN' },
-        { match: 'rewrite', label: 'REWRITE' },
-      ];
-      const tagStyle = 'font-family:monospace;font-size:10px;font-weight:500;text-transform:uppercase;color:#4A4A60;margin-bottom:8px;display:block;';
+      // 3. Add category tag — exactly once per card
       document.querySelectorAll('button, [role="button"], [class*="card"], [class*="Card"], [class*="suggestion"], [class*="prompt"]').forEach(el => {
+        // Skip if this element or any ancestor is already marked
+        if (el.closest('[data-kai-done]')) return;
+        // Skip if a tag already exists inside
         if (el.querySelector('[data-kai-tag]')) return;
-        const text = (el.textContent || '').toLowerCase();
-        const def = tagDefs.find(d => text.startsWith(d.match) || text.includes(d.match + ' '));
+
+        // Only direct text (not inherited from children containers)
+        const ownText = Array.from(el.childNodes)
+          .filter(n => n.nodeType === Node.TEXT_NODE || (n.nodeType === Node.ELEMENT_NODE && n.tagName === 'P'))
+          .map(n => n.textContent).join('').toLowerCase();
+        const allText = (el.textContent || '').toLowerCase();
+        const text = ownText || allText;
+
+        const def = __tagDefs.find(d => text.includes(d.match));
         if (!def) return;
-        // only target small cards (not huge containers)
+
         const rect = el.getBoundingClientRect();
-        if (rect.width > 500 || rect.height > 200) return;
+        if (rect.width < 10 || rect.width > 500 || rect.height > 200) return;
+
+        el.setAttribute('data-kai-done', '1');
         const tag = document.createElement('span');
         tag.setAttribute('data-kai-tag', '1');
-        tag.style.cssText = tagStyle;
+        tag.style.cssText = __tagStyle;
         tag.textContent = def.label;
         el.insertBefore(tag, el.firstChild);
       });
     };
 
-    setTimeout(__domPatch, 300);
-    setTimeout(__domPatch, 800);
-    setTimeout(__domPatch, 2000);
+    // Run at 400 ms and once more at 1.2 s for late-mounting components;
+    // the data-kai-done guard ensures no element is tagged twice.
+    setTimeout(__domPatch, 400);
+    setTimeout(__domPatch, 1200);
 
   } catch (err) {
     setStatus('Error unpacking: ' + err.message);
