@@ -27,7 +27,6 @@
       --font-mono:      'JetBrains Mono', monospace;
       --font-ui:        'Inter', sans-serif;
       --header-h:       56px;
-      --ticker-h:       32px;
       --sidebar-w:      260px;
       --radius-sm:      6px;
       --radius:         10px;
@@ -146,40 +145,6 @@
     .hdr-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 500; }
     .hdr-btn.primary:hover { background: #D4B87C; border-color: #D4B87C; }
 
-    /* ── Ticker ─────────────────────────────────────────────────── */
-    #ticker {
-      flex-shrink: 0;
-      height: var(--ticker-h);
-      border-bottom: 1px solid var(--border-soft);
-      background: var(--surface-side);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-    }
-    #ticker-track {
-      display: flex; align-items: center;
-      gap: 0;
-      white-space: nowrap;
-      animation: ticker-scroll 28s linear infinite;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
-    }
-    #ticker-track:hover { animation-play-state: paused; }
-    .ticker-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 0 24px;
-      border-right: 1px solid var(--border-soft);
-    }
-    .ticker-item .t-label { color: var(--text-muted); }
-    .ticker-item .t-val   { color: var(--text-secondary); }
-    .ticker-item .t-val.ok  { color: var(--green); }
-    .ticker-item .t-val.warn { color: var(--accent); }
-    @keyframes ticker-scroll {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
 
     /* ── Body ──────────────────────────────────────────────────── */
     #body { flex: 1; display: flex; overflow: hidden; }
@@ -416,7 +381,6 @@
       #sidebar-overlay.open { display: block; }
       #feed-inner { padding: 20px 16px 8px; }
       #input-bar { padding: 8px 12px 16px; }
-      #ticker { display: none; }
     }
   </style>
 </head>
@@ -466,27 +430,6 @@
     </div>
   </header>
 
-  <!-- ── Ticker ───────────────────────────────────────────────── -->
-  <div id="ticker">
-    <div id="ticker-track">
-      <!-- items duplicated for seamless loop -->
-      <div class="ticker-item"><span class="t-label">STATUS</span><span class="t-val ok" id="t-status">ONLINE</span></div>
-      <div class="ticker-item"><span class="t-label">UPTIME</span><span class="t-val" id="t-uptime">0:00</span></div>
-      <div class="ticker-item"><span class="t-label">MODEL</span><span class="t-val">claude-opus-4-8</span></div>
-      <div class="ticker-item"><span class="t-label">SESSION</span><span class="t-val" id="t-session">new</span></div>
-      <div class="ticker-item"><span class="t-label">MESSAGES</span><span class="t-val" id="t-msgs">0</span></div>
-      <div class="ticker-item"><span class="t-label">LATENCY</span><span class="t-val warn">—</span></div>
-      <div class="ticker-item"><span class="t-label">API</span><span class="t-val" id="t-api">not set</span></div>
-      <!-- duplicate -->
-      <div class="ticker-item"><span class="t-label">STATUS</span><span class="t-val ok">ONLINE</span></div>
-      <div class="ticker-item"><span class="t-label">UPTIME</span><span class="t-val" id="t-uptime2">0:00</span></div>
-      <div class="ticker-item"><span class="t-label">MODEL</span><span class="t-val">claude-opus-4-8</span></div>
-      <div class="ticker-item"><span class="t-label">SESSION</span><span class="t-val">new</span></div>
-      <div class="ticker-item"><span class="t-label">MESSAGES</span><span class="t-val" id="t-msgs2">0</span></div>
-      <div class="ticker-item"><span class="t-label">LATENCY</span><span class="t-val warn">—</span></div>
-      <div class="ticker-item"><span class="t-label">API</span><span class="t-val" id="t-api2">not set</span></div>
-    </div>
-  </div>
 
   <!-- ── Body ─────────────────────────────────────────────────── -->
   <div id="body">
@@ -624,9 +567,7 @@
     document.getElementById('clock').textContent =
       `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     const up = formatUptime(Date.now() - startTime);
-    document.getElementById('uptime').textContent  = `up ${up}`;
-    document.getElementById('t-uptime').textContent  = up;
-    document.getElementById('t-uptime2').textContent = up;
+    document.getElementById('uptime').textContent = `up ${up}`;
 
     // Session time in welcome block
     const sec = Math.floor((Date.now() - startTime) / 1000);
@@ -642,10 +583,7 @@
   function setStatus(thinking) {
     isThinking = thinking;
     document.getElementById('status-dot').classList.toggle('thinking', thinking);
-    const txt = thinking ? 'THINKING' : 'ONLINE';
-    document.getElementById('status-text').textContent = txt;
-    document.getElementById('t-status').textContent    = txt;
-    document.getElementById('t-status').className = thinking ? 't-val warn' : 't-val ok';
+    document.getElementById('status-text').textContent = thinking ? 'THINKING' : 'ONLINE';
   }
 
   // ── Sidebar ─────────────────────────────────────────────────
@@ -660,10 +598,7 @@
   // API key badge
   function onApiKeyInput() {
     const val = document.getElementById('api-key-input').value.trim();
-    const badge = document.getElementById('settings-badge');
-    badge.style.display = val ? 'none' : '';
-    document.getElementById('t-api').textContent  = val ? 'configured' : 'not set';
-    document.getElementById('t-api2').textContent = val ? 'configured' : 'not set';
+    document.getElementById('settings-badge').style.display = val ? 'none' : '';
   }
   // Show badge initially
   document.getElementById('settings-badge').style.display = '';
@@ -674,10 +609,7 @@
     feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
   }
 
-  function updateMsgCount() {
-    document.getElementById('t-msgs').textContent  = msgCount;
-    document.getElementById('t-msgs2').textContent = msgCount;
-  }
+  function updateMsgCount() {}
 
   function addMessage(role, text) {
     document.getElementById('empty')?.remove();
