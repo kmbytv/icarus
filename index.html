@@ -523,45 +523,79 @@
 
     /* ── Input bar ─────────────────────────────────────────────── */
     #input-bar {
-      flex-shrink: 0; padding: 12px 32px 20px;
+      flex-shrink: 0; padding: 14px 32px 24px;
       background: var(--bg); border-top: 1px solid var(--border-soft);
     }
+
+    /* Glass pill wrapper */
+    #input-pill-wrap {
+      max-width: 680px; margin: 0 auto;
+      position: relative;
+    }
+
+    /* Outer glow when focused */
+    #input-pill-wrap:focus-within::before {
+      content: '';
+      position: absolute; inset: -3px;
+      border-radius: 100px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(180,180,180,0.07), transparent 70%);
+      pointer-events: none;
+    }
+
     #input-card {
-      max-width: 740px; margin: 0 auto;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); box-shadow: var(--shadow);
-      overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s;
+      position: relative;
+      display: flex; align-items: center; gap: 0;
+      border-radius: 100px;
+      /* Glass layers: dark translucent bg + blur */
+      background: rgba(28, 28, 28, 0.82);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      /* Multi-layer border: top highlight + subtle outer ring */
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow:
+        /* top inner highlight — the "glass shine" */
+        inset 0 1px 0 rgba(255,255,255,0.10),
+        /* bottom inner shadow for depth */
+        inset 0 -1px 0 rgba(0,0,0,0.35),
+        /* outer drop shadow */
+        0 8px 32px rgba(0,0,0,0.55),
+        0 2px 8px rgba(0,0,0,0.35);
+      transition: box-shadow 0.2s, border-color 0.2s;
+      overflow: hidden;
+      padding: 0 6px 0 22px;
+      min-height: 52px;
     }
     #input-card:focus-within {
-      border-color: var(--accent-dim);
-      box-shadow: var(--shadow), 0 0 0 3px rgba(153,153,153,0.06);
+      border-color: rgba(255,255,255,0.12);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        inset 0 -1px 0 rgba(0,0,0,0.35),
+        0 8px 40px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(160,160,160,0.08);
     }
+
+    /* Glass shine overlay on top */
+    #input-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 50%;
+      border-radius: 100px 100px 0 0;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.055) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
     #input-label {
-      display: block; font-family: var(--font-mono);
-      font-size: 9px; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--text-muted);
-      padding: 10px 16px 0;
-      transition: color 0.2s;
+      display: none; /* label hidden in pill mode */
     }
-    #input-card.typing #input-label { color: var(--accent); }
-    #input-label .label-cursor {
-      display: inline-block;
-      width: 5px; height: 0.85em;
-      background: var(--accent);
-      vertical-align: text-bottom;
-      margin-left: 2px;
-      animation: blink 0.7s step-end infinite;
-      opacity: 0;
-      transition: opacity 0.15s;
-    }
-    #input-card.typing #input-label .label-cursor { opacity: 1; }
-    #input-row { display: flex; align-items: flex-end; gap: 8px; padding: 6px 10px 10px 16px; }
+
+    #input-row { display: flex; align-items: center; gap: 10px; flex: 1; padding: 14px 0; }
     #input {
-      flex: 1; min-height: 22px; max-height: 120px;
+      flex: 1; min-height: 22px; max-height: 100px;
       line-height: 1.6; color: var(--text-primary);
       overflow-y: auto; font-size: 14px;
       outline: none; word-break: break-word;
       white-space: pre-wrap;
+      background: transparent;
     }
     #input:empty::before {
       content: attr(data-placeholder);
@@ -576,26 +610,48 @@
       from { opacity: 0; transform: translateY(4px) scale(0.75); }
       to   { opacity: 1; transform: translateY(0)   scale(1); }
     }
-    #send-btn {
-      flex-shrink: 0; width: 32px; height: 32px;
-      border-radius: var(--radius-sm);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--text-muted); border: 1px solid transparent;
-      transition: all 0.15s;
+
+    /* Typing indicator dot inside pill */
+    #typing-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+      opacity: 0; transition: opacity 0.2s, background 0.2s;
     }
-    #send-btn.ready { background: var(--accent); border-color: var(--accent); color: var(--bg); }
-    #send-btn.ready:hover { background: #BBBBBB; border-color: #BBBBBB; }
-    #send-btn svg { width: 14px; height: 14px; }
+    #input-card.typing #typing-dot { opacity: 1; background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+
+    #send-btn {
+      flex-shrink: 0; width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.18s;
+      position: relative;
+      margin: 0 2px;
+    }
+    #send-btn:hover { border-color: rgba(255,255,255,0.12); color: var(--text-secondary); }
+    #send-btn.ready {
+      background: var(--accent);
+      border-color: transparent;
+      color: var(--bg);
+      box-shadow: 0 2px 12px rgba(153,153,153,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    #send-btn.ready:hover { background: #BBBBBB; }
+    #send-btn svg { width: 13px; height: 13px; }
+
     #input-footer {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 0 16px 8px;
+      padding: 8px 8px 0;
+      max-width: 680px; margin: 0 auto;
     }
     /* Keyboard shortcut chips */
     #input-shortcuts { display: flex; align-items: center; gap: 6px; }
     .kbd-chip {
       display: inline-flex; align-items: center; gap: 3px;
       font-family: var(--font-mono); font-size: 10px;
-      color: var(--text-muted); opacity: 0.45;
+      color: var(--text-muted); opacity: 0.35;
       letter-spacing: 0.02em;
     }
     .kbd-chip kbd {
@@ -606,7 +662,7 @@
       color: var(--text-muted);
     }
     .kbd-sep { color: var(--text-muted); opacity: 0.25; font-size: 11px; }
-    #char-count { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); opacity: 0.4; letter-spacing: 0.04em; }
+    #char-count { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); opacity: 0.35; letter-spacing: 0.04em; }
 
     /* ── Mobile ────────────────────────────────────────────────── */
     @media (max-width: 640px) {
@@ -617,7 +673,9 @@
       #sidebar.open { transform: translateX(0); }
       #sidebar-overlay.open { display: block; }
       #feed-inner { padding: 20px 16px 8px; }
-      #input-bar { padding: 8px 12px 16px; }
+      #input-bar { padding: 8px 12px 14px; }
+      #input-pill-wrap { max-width: 100%; }
+      #input-footer { max-width: 100%; }
       #tabs-bar { padding: 0 16px; }
       #api-banner { padding: 8px 16px; }
     }
@@ -824,26 +882,28 @@
         </div>
 
         <div id="input-bar">
-          <div id="input-card">
-            <span id="input-label"><span id="label-text">Message</span><span class="label-cursor"></span></span>
-            <div id="input-row">
-              <div id="input" contenteditable="true" spellcheck="false" data-placeholder="Type here..." role="textbox" aria-multiline="true"></div>
-              <button id="send-btn" onclick="handleSend()" aria-label="Send">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-              </button>
-            </div>
-            <div id="input-footer">
-              <div id="input-shortcuts">
-                <span class="kbd-chip"><kbd>↵</kbd> send</span>
-                <span class="kbd-sep">·</span>
-                <span class="kbd-chip"><kbd>⇧</kbd><kbd>↵</kbd> newline</span>
-                <span class="kbd-sep">·</span>
-                <span class="kbd-chip"><kbd>⌘K</kbd> focus</span>
+          <div id="input-pill-wrap">
+            <div id="input-card">
+              <div id="input-row">
+                <span id="typing-dot"></span>
+                <div id="input" contenteditable="true" spellcheck="false" data-placeholder="Ask Kai anything..." role="textbox" aria-multiline="true"></div>
+                <button id="send-btn" onclick="handleSend()" aria-label="Send">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </button>
               </div>
-              <div id="char-count">0</div>
             </div>
+          </div>
+          <div id="input-footer">
+            <div id="input-shortcuts">
+              <span class="kbd-chip"><kbd>↵</kbd> send</span>
+              <span class="kbd-sep">·</span>
+              <span class="kbd-chip"><kbd>⇧</kbd><kbd>↵</kbd> newline</span>
+              <span class="kbd-sep">·</span>
+              <span class="kbd-chip"><kbd>⌘K</kbd> focus</span>
+            </div>
+            <div id="char-count"></div>
           </div>
         </div>
       </div>
@@ -1100,7 +1160,6 @@
   const input   = document.getElementById('input');
   const sendBtn = document.getElementById('send-btn');
   const inputCard = document.getElementById('input-card');
-  const labelText = document.getElementById('label-text');
   let typingTimer = null;
 
   function getInputText() {
@@ -1110,14 +1169,11 @@
   function onInputChange() {
     const text = getInputText();
     sendBtn.classList.toggle('ready', text.trim().length > 0);
-    document.getElementById('char-count').textContent = text.length || '';
+    const len = text.length;
+    document.getElementById('char-count').textContent = len > 20 ? len : '';
     inputCard.classList.add('typing');
-    labelText.textContent = 'Typing';
     clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {
-      inputCard.classList.remove('typing');
-      labelText.textContent = 'Message';
-    }, 1000);
+    typingTimer = setTimeout(() => { inputCard.classList.remove('typing'); }, 1200);
   }
 
   input.addEventListener('keydown', e => {
