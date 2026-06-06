@@ -141,7 +141,7 @@ app.post('/chat', async (req, res) => {
     // Tool loop — runs until the model stops emitting tool calls
     while (true) {
       const stream = await client.chat.completions.create({
-        model:  'deepseek/deepseek-chat-v3-0324:free',
+        model:  'deepseek/deepseek-v4-flash',
         stream: true,
         messages,
         tools: [
