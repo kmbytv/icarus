@@ -15,6 +15,7 @@
     "@octokit/rest": "^21.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "exa-js": "^2.13.0",
     "express": "^4.19.2",
     "node-cron": "^3.0.3",
     "openai": "^4.52.7"

@@ -4,6 +4,7 @@ import cors from 'cors';
 import client from './openrouter.js';
 import { executeTool } from './tools/code.js';
 import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
+import { webSearch, webFetch } from './tools/search.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import './cron.js';
 
@@ -147,58 +148,135 @@ app.post('/chat', async (req, res) => {
         stream: true,
         messages,
         tools: [
-          { type: 'openrouter:web_search' },
-          { type: 'openrouter:web_fetch' },
+          {
+            type: 'function',
+            function: {
+              name: 'web_search',
+              description: 'Поиск актуальной информации в интернете через Exa',
+              parameters: {
+                type: 'object',
+                properties: {
+                  query:      { type: 'string', description: 'Поисковый запрос' },
+                  numResults: { type: 'number', description: 'Количество результатов, по умолчанию 5' },
+                },
+                required: ['query'],
+              },
+            },
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'web_fetch',
+              description: 'Получить полное содержимое страницы по URL',
+              parameters: {
+                type: 'object',
+                properties: {
+                  url: { type: 'string', description: 'URL страницы' },
+                },
+                required: ['url'],
+              },
+            },
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'github_read_file',
+              description: 'Читает файл из GitHub репо kmbytv/icarus',
+              parameters: {
+                type: 'object',
+                properties: { path: { type: 'string', description: 'Путь к файлу, например index.html или server/index.js' } },
+                required: ['path'],
+              },
+            },
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'github_write_file',
+              description: 'Записывает или обновляет файл в GitHub репо kmbytv/icarus и делает коммит',
+              parameters: {
+                type: 'object',
+                properties: {
+                  path:    { type: 'string' },
+                  content: { type: 'string', description: 'Полное содержимое файла' },
+                  message: { type: 'string', description: 'Сообщение коммита' },
+                },
+                required: ['path', 'content', 'message'],
+              },
+            },
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'github_list_files',
+              description: 'Возвращает список файлов в директории репо',
+              parameters: {
+                type: 'object',
+                properties: { dir_path: { type: 'string', description: 'Путь к папке, например server или .' } },
+                required: ['dir_path'],
+              },
+            },
+          },
         ],
       });
 
-      let turnText = '';
-      let lineBuf  = '';
-      let chunkCount = 0;
+      let turnText     = '';
+      let nativeTools  = []; // accumulate native tool_calls across chunks
 
       for await (const chunk of stream) {
-        chunkCount++;
-        const delta = chunk.choices[0]?.delta?.content ?? '';
-        if (chunkCount === 1) console.log('[chat] first chunk, finish_reason:', chunk.choices[0]?.finish_reason, 'delta_keys:', Object.keys(chunk.choices[0]?.delta ?? {}));
-        if (!delta) continue;
+        const choice = chunk.choices[0];
+        if (!choice) continue;
 
-        turnText += delta;
-        lineBuf  += delta;
+        // Accumulate text content
+        const textDelta = choice.delta?.content ?? '';
+        if (textDelta) {
+          turnText += textDelta;
+          send({ type: 'delta', text: textDelta });
+        }
 
-        // Stream delta to client regardless — tool call lines will be
-        // re-processed below, but we want the user to see thinking text.
-        send({ type: 'delta', text: delta });
-
-        // Check completed lines for tool calls
-        const lines = lineBuf.split('\n');
-        lineBuf = lines.pop(); // last element may be incomplete
-        for (const line of lines) {
-          const call = parseToolCall(line);
-          if (call) {
-            // Notify client a tool is being invoked
-            send({ type: 'tool_call', tool: call.toolName, args: call.args });
-          }
+        // Accumulate native tool_calls deltas
+        for (const tc of choice.delta?.tool_calls ?? []) {
+          const idx = tc.index ?? 0;
+          if (!nativeTools[idx]) nativeTools[idx] = { id: '', name: '', argsBuf: '' };
+          if (tc.id)                    nativeTools[idx].id       += tc.id;
+          if (tc.function?.name)        nativeTools[idx].name     += tc.function.name;
+          if (tc.function?.arguments)   nativeTools[idx].argsBuf  += tc.function.arguments;
         }
       }
 
-      console.log('[chat] stream done, chunks:', chunkCount, 'turnText len:', turnText.length);
+      console.log('[chat] stream done, text len:', turnText.length, 'native tools:', nativeTools.length);
       fullAssistantText += turnText;
 
-      // ── Scan completed turn for tool calls ──────────────────
-      const toolCall = turnText.split('\n').map(parseToolCall).find(Boolean);
+      // ── Resolve tool call: native takes priority, fall back to text ──
+      let toolCall = null;
+
+      if (nativeTools.length > 0) {
+        const tc = nativeTools[0];
+        try {
+          const args = JSON.parse(tc.argsBuf || '{}');
+          toolCall = { toolName: tc.name, args };
+          console.log('[chat] native tool call:', tc.name, JSON.stringify(args).slice(0, 120));
+          send({ type: 'tool_call', tool: tc.name, args });
+        } catch (e) {
+          console.error('[chat] failed to parse native tool args:', tc.argsBuf);
+        }
+      }
 
       if (!toolCall) {
-        // No tool call → done
-        break;
+        toolCall = turnText.split('\n').map(parseToolCall).find(Boolean) ?? null;
       }
+
+      if (!toolCall) break; // no tool call → done
 
       // Execute tool, feed result back as a new user message, loop
       let result;
       try {
         switch (toolCall.toolName) {
-          case 'github_read_file':  result = await githubReadFile(toolCall.args.path);                                                break;
+          case 'web_search':        result = await webSearch(toolCall.args.query, { numResults: toolCall.args.numResults }); break;
+          case 'web_fetch':         result = await webFetch(toolCall.args.url);                                              break;
+          case 'github_read_file':  result = await githubReadFile(toolCall.args.path);                                       break;
           case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
-          case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                           break;
+          case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                  break;
           default:                  result = await executeTool(toolCall.toolName, toolCall.args);
         }
       } catch (toolErr) {
@@ -209,9 +287,21 @@ app.post('/chat', async (req, res) => {
 
       send({ type: 'tool_result', tool: toolCall.toolName, result });
 
-      // Append this assistant turn + tool result to messages for next loop
-      messages.push({ role: 'assistant', content: turnText });
-      messages.push({ role: 'user',      content: resultLine });
+      // Append assistant turn + tool result to messages for next loop
+      if (nativeTools.length > 0) {
+        // Native function calling format
+        const tc = nativeTools[0];
+        messages.push({
+          role: 'assistant',
+          content: turnText || null,
+          tool_calls: [{ id: tc.id || 'call_0', type: 'function', function: { name: tc.name, arguments: tc.argsBuf } }],
+        });
+        messages.push({ role: 'tool', tool_call_id: tc.id || 'call_0', content: JSON.stringify(result) });
+      } else {
+        // Text-based tool calling format
+        messages.push({ role: 'assistant', content: turnText });
+        messages.push({ role: 'user',      content: resultLine });
+      }
       fullAssistantText += '\n' + resultLine;
 
       // Safety: max 6 tool rounds to prevent infinite loops
