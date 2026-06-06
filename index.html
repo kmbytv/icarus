@@ -201,7 +201,7 @@
     #api-banner-close:hover { opacity: 0.9; }
 
     /* ── Body ──────────────────────────────────────────────────── */
-    #body { flex: 1; display: flex; overflow: visible; padding: 0 8px 8px 8px; gap: 0; }
+    #body { flex: 1; display: flex; overflow: hidden; padding: 0 8px 8px 8px; gap: 0; min-height: 0; }
 
     /* ── Sidebar ───────────────────────────────────────────────── */
     #sidebar-overlay {
@@ -893,15 +893,15 @@
     #input-pill-wrap:focus-within::before {
       content: '';
       position: absolute; inset: -3px;
-      border-radius: 100px;
+      border-radius: 26px;
       background: radial-gradient(ellipse at 50% 0%, rgba(180,180,180,0.07), transparent 70%);
       pointer-events: none;
     }
 
     #input-card {
       position: relative;
-      display: flex; align-items: center; gap: 0;
-      border-radius: 100px;
+      display: flex; align-items: flex-end; gap: 0;
+      border-radius: 26px;
       background: var(--surface-raise);
       backdrop-filter: blur(20px) saturate(1.2);
       -webkit-backdrop-filter: blur(20px) saturate(1.2);
@@ -931,7 +931,7 @@
       display: none; /* label hidden in pill mode */
     }
 
-    #input-row { display: flex; align-items: center; gap: 10px; flex: 1; padding: 14px 0; }
+    #input-row { display: flex; align-items: flex-end; gap: 10px; flex: 1; padding: 12px 0; }
     #input {
       flex: 1; min-height: 22px; max-height: 100px;
       line-height: 1.6; color: var(--text-primary);
@@ -965,6 +965,7 @@
 
     #send-btn {
       flex-shrink: 0; width: 36px; height: 36px;
+      align-self: flex-end; margin-bottom: 0;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       color: var(--text-muted);
