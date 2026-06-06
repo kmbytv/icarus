@@ -17,17 +17,45 @@ cron.schedule('0 3 */3 * *', async () => {
       messages: [
         {
           role: 'system',
-          content: 'You are a memory distillation agent. Extract only the most important facts, preferences, goals, and context about the user from these conversation logs. Be concise. Output plain text, no headers, no bullet points. Max 500 words.',
+          content: `Ты — система памяти AI агента KAI. Проанализируй диалоги и извлеки структурированные знания.
+
+Верни ТОЛЬКО валидный JSON без markdown, без пояснений, без \`\`\`json\`\`\` блоков:
+
+{
+  "summary": "2-3 предложения — общий контекст пользователя",
+  "facts": [
+    "конкретный факт о пользователе или его жизни"
+  ],
+  "preferences": [
+    "предпочтение, привычка, стиль общения"
+  ],
+  "ongoing_tasks": [
+    "незавершённая задача или активный проект"
+  ],
+  "recent_topics": [
+    "тема которую обсуждали в последнее время"
+  ]
+}
+
+Каждый массив — максимум 5 элементов. Только то что реально важно.`,
         },
         { role: 'user', content: transcript },
       ],
     });
 
-    const distilled = completion.choices[0]?.message?.content?.trim();
-    if (distilled) {
-      updateMemoryCore(distilled);
-      console.log('[cron] memory updated:', Date.now());
+    const raw = completion.choices[0]?.message?.content?.trim();
+    if (!raw) return;
+
+    let structured;
+    try {
+      structured = JSON.parse(raw);
+    } catch (parseErr) {
+      console.error('[cron] JSON parse failed, saving raw:', parseErr.message);
+      structured = { raw };
     }
+
+    updateMemoryCore(structured);
+    console.log('[cron] memory updated:', Date.now());
   } catch (err) {
     console.error('[cron] error:', err?.message ?? err);
   }
