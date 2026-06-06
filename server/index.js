@@ -110,7 +110,7 @@ function parseToolCall(line) {
 
 // ── POST /chat ──────────────────────────────────────────────────
 app.post('/chat', async (req, res) => {
-  const { message, sessionId = 'default', systemPrompt } = req.body;
+  const { message, sessionId = 'default', systemPrompt, file } = req.body;
 
   if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'message is required' });
@@ -139,11 +139,39 @@ app.post('/chat', async (req, res) => {
       systemPrompt?.trim() ? `\nAdditional instructions:\n${systemPrompt.trim()}` : '',
     ].join('');
 
+    // Build user content — plain text or multipart (text + file)
+    let userContent;
+    let modelOverride = null;
+
+    if (file && file.dataUrl && file.mimeType) {
+      const isImage = file.mimeType.startsWith('image/');
+      const isText  = file.mimeType.startsWith('text/') || /\.(js|ts|py|json|md|css|html|sh|yaml|yml|toml|env)$/i.test(file.name || '');
+
+      if (isImage) {
+        modelOverride = 'google/gemini-2.0-flash-exp:free';
+        userContent = [
+          { type: 'text', text: message.trim() },
+          { type: 'image_url', image_url: { url: file.dataUrl } },
+        ];
+        console.log('[chat] image attached, switching to gemini');
+      } else if (isText) {
+        const base64 = file.dataUrl.split(',')[1] ?? '';
+        const decoded = Buffer.from(base64, 'base64').toString('utf8').slice(0, 20000);
+        userContent = `${message.trim()}\n\n\`\`\`${file.name ?? 'file'}\n${decoded}\n\`\`\``;
+        console.log('[chat] text file attached:', file.name, decoded.length, 'chars');
+      } else {
+        userContent = message.trim();
+        console.log('[chat] unsupported file type, ignoring:', file.mimeType);
+      }
+    } else {
+      userContent = message.trim();
+    }
+
     // Build message list for this turn
     const messages = [
       { role: 'system', content: sysContent },
       ...history,
-      { role: 'user', content: message.trim() },
+      { role: 'user', content: userContent },
     ];
 
     let fullAssistantText = '';
@@ -155,7 +183,7 @@ app.post('/chat', async (req, res) => {
     while (true) {
       console.log('[chat] calling OpenRouter...');
       const stream = await client.chat.completions.create({
-        model:  'deepseek/deepseek-v4-flash',
+        model: modelOverride ?? 'deepseek/deepseek-v4-flash',
         stream: true,
         messages,
         tools: [

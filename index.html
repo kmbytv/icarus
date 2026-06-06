@@ -1030,6 +1030,67 @@
     #stop-btn:hover { background: var(--danger); border-color: transparent; color: #fff; }
     #stop-btn i { font-size: 13px; line-height: 1; }
 
+    /* ── File attach button ── */
+    #attach-btn {
+      flex-shrink: 0; width: 32px; height: 32px;
+      align-self: flex-end; margin-bottom: 2px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      background: transparent; border: none;
+      transition: color 0.15s, background 0.15s;
+    }
+    #attach-btn:hover { color: var(--text-secondary); background: var(--surface-hover); }
+    #attach-btn.has-file { color: var(--accent); }
+    #attach-btn i { font-size: 16px; line-height: 1; }
+
+    /* ── File preview strip ── */
+    #file-preview {
+      display: none; align-items: center; gap: 8px;
+      padding: 8px 14px 0;
+    }
+    #file-preview.visible { display: flex; }
+    #file-preview-thumb {
+      width: 40px; height: 40px; border-radius: 6px;
+      object-fit: cover; border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #file-preview-icon {
+      width: 40px; height: 40px; border-radius: 6px;
+      background: var(--surface-hover); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--text-secondary); flex-shrink: 0;
+    }
+    #file-preview-name {
+      font-size: 12px; color: var(--text-secondary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 160px;
+    }
+    #file-preview-remove {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--surface-hover); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); cursor: pointer; font-size: 11px;
+      flex-shrink: 0; transition: background 0.15s, color 0.15s;
+    }
+    #file-preview-remove:hover { background: var(--danger); color: #fff; border-color: transparent; }
+
+    /* ── Drag-over overlay ── */
+    #drag-overlay {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+      pointer-events: none;
+    }
+    #drag-overlay.active { display: flex; }
+    #drag-overlay-box {
+      border: 2px dashed var(--accent); border-radius: 16px;
+      padding: 48px 64px; text-align: center;
+    }
+    #drag-overlay-box i { font-size: 40px; color: var(--accent); display: block; margin-bottom: 12px; }
+    #drag-overlay-box span { font-size: 16px; color: var(--text-primary); font-family: var(--font-ui); }
+
     #input-footer {
       display: flex; justify-content: space-between; align-items: center;
       padding: 8px 8px 0;
@@ -1284,7 +1345,17 @@
         <div id="input-bar">
           <div id="input-pill-wrap">
             <div id="input-card">
+              <div id="file-preview">
+                <div id="file-preview-icon" style="display:none"><i class="ti ti-file-text"></i></div>
+                <img id="file-preview-thumb" style="display:none" alt="preview">
+                <span id="file-preview-name"></span>
+                <div id="file-preview-remove" onclick="clearAttachment()" title="Remove">✕</div>
+              </div>
               <div id="input-row">
+                <button id="attach-btn" onclick="document.getElementById('file-input').click()" aria-label="Attach file">
+                  <i class="ti ti-paperclip"></i>
+                </button>
+                <input type="file" id="file-input" accept="image/*,text/*,.js,.ts,.py,.json,.md,.css,.html,.sh,.yaml,.yml,.toml,.env,.txt,.csv" style="display:none" onchange="handleFileSelect(this)">
                 <span id="typing-dot"></span>
                 <div id="input" contenteditable="true" spellcheck="false" data-placeholder="Ask Kai anything..." role="textbox" aria-multiline="true"></div>
                 <button id="send-btn" onclick="handleSend()" aria-label="Send">
@@ -1437,6 +1508,77 @@
 
   // ── Status ──────────────────────────────────────────────────
   let abortController = null;
+
+  // ── File attachment ──────────────────────────────────────────
+  let attachedFile = null; // { name, mimeType, dataUrl }
+
+  function handleFileSelect(input) {
+    const f = input.files[0];
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { alert('File too large (max 5 MB)'); input.value = ''; return; }
+    readFileAsDataUrl(f);
+  }
+
+  function readFileAsDataUrl(f) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      attachedFile = { name: f.name, mimeType: f.type, dataUrl: e.target.result };
+      showFilePreview();
+    };
+    reader.readAsDataURL(f);
+  }
+
+  function showFilePreview() {
+    const preview  = document.getElementById('file-preview');
+    const thumb    = document.getElementById('file-preview-thumb');
+    const icon     = document.getElementById('file-preview-icon');
+    const nameEl   = document.getElementById('file-preview-name');
+    const attachBtn = document.getElementById('attach-btn');
+    preview.classList.add('visible');
+    attachBtn.classList.add('has-file');
+    nameEl.textContent = attachedFile.name;
+    if (attachedFile.mimeType.startsWith('image/')) {
+      thumb.src = attachedFile.dataUrl;
+      thumb.style.display = '';
+      icon.style.display = 'none';
+    } else {
+      icon.style.display = '';
+      thumb.style.display = 'none';
+    }
+  }
+
+  function clearAttachment() {
+    attachedFile = null;
+    document.getElementById('file-preview').classList.remove('visible');
+    document.getElementById('attach-btn').classList.remove('has-file');
+    document.getElementById('file-preview-thumb').style.display = 'none';
+    document.getElementById('file-preview-icon').style.display = 'none';
+    document.getElementById('file-input').value = '';
+  }
+
+  // ── Drag & drop ──────────────────────────────────────────────
+  let dragCounter = 0;
+  document.addEventListener('dragenter', e => {
+    if (!e.dataTransfer?.types?.includes('Files')) return;
+    dragCounter++;
+    document.getElementById('drag-overlay').classList.add('active');
+  });
+  document.addEventListener('dragleave', () => {
+    dragCounter--;
+    if (dragCounter <= 0) { dragCounter = 0; document.getElementById('drag-overlay').classList.remove('active'); }
+  });
+  document.addEventListener('dragover', e => e.preventDefault());
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    dragCounter = 0;
+    document.getElementById('drag-overlay').classList.remove('active');
+    const f = e.dataTransfer?.files?.[0];
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { alert('File too large (max 5 MB)'); return; }
+    readFileAsDataUrl(f);
+    // Focus input
+    document.getElementById('input').focus();
+  });
 
   function setStatus(thinking) {
     isThinking = thinking;
@@ -1989,22 +2131,36 @@
   // ── Send ─────────────────────────────────────────────────────
   function handleSend() {
     const text = getInputText().trim();
-    if (!text || isThinking) return;
-    // Fire animation
+    if ((!text && !attachedFile) || isThinking) return;
     sendBtn.classList.add('firing');
     sendBtn.addEventListener('animationend', () => sendBtn.classList.remove('firing'), { once: true });
     input.innerHTML = '';
     sendBtn.classList.remove('ready');
     document.getElementById('char-count').textContent = '';
-    addMessage('user', text);
+    const file = attachedFile;
+    clearAttachment();
+    // Show user message with optional file thumb
+    const userBubble = addMessage('user', text || ' ');
+    if (file) {
+      const attach = document.createElement('div');
+      attach.style.cssText = 'margin-top:6px;display:flex;align-items:center;gap:6px;font-size:12px;opacity:0.7;';
+      if (file.mimeType.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = file.dataUrl; img.style.cssText = 'width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border)';
+        attach.appendChild(img);
+      } else {
+        attach.innerHTML = `<i class="ti ti-file-text" style="font-size:16px"></i><span>${file.name}</span>`;
+      }
+      userBubble.appendChild(attach);
+    }
     saveHistory('user', text);
-    sendToAgent(text);
+    sendToAgent(text || 'Посмотри на прикреплённый файл', file);
   }
 
   // ── Agent stub ───────────────────────────────────────────────
   const BACKEND = 'https://icarus-production-5c67.up.railway.app';
 
-  async function sendToAgent(userText) {
+  async function sendToAgent(userText, file = null) {
     setStatus(true);
     const { body } = addProcessing();
     const systemPrompt = document.getElementById('system-prompt-area').value.trim();
@@ -2016,10 +2172,13 @@
     abortController = new AbortController();
 
     try {
+      const payload = { message: userText, sessionId: 'main', systemPrompt };
+      if (file) payload.file = { name: file.name, mimeType: file.mimeType, dataUrl: file.dataUrl };
+
       const res = await fetch(`${BACKEND}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText, sessionId: 'main', systemPrompt }),
+        body: JSON.stringify(payload),
         signal: abortController.signal,
       });
 
@@ -2095,5 +2254,12 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
+
+<div id="drag-overlay">
+  <div id="drag-overlay-box">
+    <i class="ti ti-upload"></i>
+    <span>Drop file to attach</span>
+  </div>
+</div>
 </body>
 </html>
