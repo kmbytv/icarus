@@ -819,6 +819,30 @@
     /* Extra bottom padding so timestamp doesn't overlap next message */
     .msg-row:last-child { margin-bottom: 10px; }
 
+    .plan-block {
+      background: var(--surface-raise);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      color: var(--text-secondary);
+      max-width: 480px;
+    }
+    .plan-block-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 7px;
+    }
+    .plan-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    .plan-step { display: flex; gap: 8px; align-items: baseline; }
+    .plan-step-num { color: var(--text-muted); font-size: 11px; min-width: 14px; }
+    .plan-step-text { color: var(--text-secondary); line-height: 1.4; }
+
     .msg-line-cmd { color: var(--text-muted); }
 
     .time-divider {
@@ -1952,6 +1976,7 @@
       const reader  = res.body.getReader();
       const decoder = new TextDecoder();
       let   buf     = '';
+      let   planInserted = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1966,7 +1991,18 @@
           let event;
           try { event = JSON.parse(line.slice(6)); } catch { continue; }
 
-          if (event.type === 'delta' && event.text) {
+          if (event.type === 'plan' && Array.isArray(event.steps) && !planInserted) {
+            planInserted = true;
+            const planEl = document.createElement('div');
+            planEl.className = 'plan-block';
+            planEl.innerHTML = `<div class="plan-block-title">План выполнения</div><ol class="plan-steps">${
+              event.steps.map((s, i) =>
+                `<li class="plan-step"><span class="plan-step-num">${i + 1}.</span><span class="plan-step-text">${s}</span></li>`
+              ).join('')
+            }</ol>`;
+            body.insertAdjacentElement('beforebegin', planEl);
+            scrollToBottom();
+          } else if (event.type === 'delta' && event.text) {
             accumulated += event.text;
             // Insert text before the cursor so it appears to stream in
             cursor.insertAdjacentText('beforebegin', event.text);
