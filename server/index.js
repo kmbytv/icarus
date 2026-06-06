@@ -119,6 +119,7 @@ app.post('/chat', async (req, res) => {
   const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
 
   try {
+    console.log('[chat] incoming:', sessionId, JSON.stringify(message).slice(0, 80));
     const history = getHistory(sessionId);
 
     // Build system prompt: memory context + tools description + optional user-supplied prompt
@@ -140,6 +141,7 @@ app.post('/chat', async (req, res) => {
 
     // Tool loop — runs until the model stops emitting tool calls
     while (true) {
+      console.log('[chat] calling OpenRouter...');
       const stream = await client.chat.completions.create({
         model:  'deepseek/deepseek-v4-flash',
         stream: true,
@@ -192,9 +194,12 @@ app.post('/chat', async (req, res) => {
 
       let turnText = '';
       let lineBuf  = '';
+      let chunkCount = 0;
 
       for await (const chunk of stream) {
+        chunkCount++;
         const delta = chunk.choices[0]?.delta?.content ?? '';
+        if (chunkCount === 1) console.log('[chat] first chunk, finish_reason:', chunk.choices[0]?.finish_reason, 'delta_keys:', Object.keys(chunk.choices[0]?.delta ?? {}));
         if (!delta) continue;
 
         turnText += delta;
@@ -216,6 +221,7 @@ app.post('/chat', async (req, res) => {
         }
       }
 
+      console.log('[chat] stream done, chunks:', chunkCount, 'turnText len:', turnText.length);
       fullAssistantText += turnText;
 
       // ── Scan completed turn for tool calls ──────────────────
