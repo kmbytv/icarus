@@ -1016,6 +1016,19 @@
       100% { transform: scale(1);   box-shadow: none; }
     }
     #send-btn.firing { animation: send-pop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    #stop-btn {
+      flex-shrink: 0; width: 36px; height: 36px;
+      align-self: flex-end;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-primary);
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      transition: all 0.18s;
+      margin: 0 2px;
+    }
+    #stop-btn:hover { background: var(--danger); border-color: transparent; color: #fff; }
+    #stop-btn i { font-size: 13px; line-height: 1; }
 
     #input-footer {
       display: flex; justify-content: space-between; align-items: center;
@@ -1277,6 +1290,9 @@
                 <button id="send-btn" onclick="handleSend()" aria-label="Send">
                   <i class="ti ti-arrow-up"></i>
                 </button>
+                <button id="stop-btn" onclick="handleStop()" aria-label="Stop" style="display:none">
+                  <i class="ti ti-player-stop-filled"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -1420,10 +1436,18 @@
   updateClock();
 
   // ── Status ──────────────────────────────────────────────────
+  let abortController = null;
+
   function setStatus(thinking) {
     isThinking = thinking;
     document.getElementById('status-dot').classList.toggle('thinking', thinking);
     document.getElementById('status-text').textContent = thinking ? 'THINKING' : 'ONLINE';
+    document.getElementById('send-btn').style.display = thinking ? 'none' : '';
+    document.getElementById('stop-btn').style.display = thinking ? '' : 'none';
+  }
+
+  function handleStop() {
+    if (abortController) { abortController.abort(); abortController = null; }
   }
 
   // ── Sidebar ─────────────────────────────────────────────────
@@ -1989,11 +2013,14 @@
     const cursor = document.createElement('span');
     cursor.className = 'cursor';
 
+    abortController = new AbortController();
+
     try {
       const res = await fetch(`${BACKEND}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userText, sessionId: 'main', systemPrompt }),
+        signal: abortController.signal,
       });
 
       if (!res.ok) {
@@ -2048,9 +2075,12 @@
         }
       }
     } catch (err) {
-      accumulated = `Error: ${err.message}`;
-      body.textContent = accumulated;
+      if (err.name !== 'AbortError') {
+        accumulated = `Error: ${err.message}`;
+        body.textContent = accumulated;
+      }
     } finally {
+      abortController = null;
       cursor.remove();
       // Apply > line highlighting now that full text is known
       if (accumulated) {

@@ -7,6 +7,7 @@ import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github
 import { webSearch, webFetch } from './tools/search.js';
 import { runPlanner } from './planner.js';
 import { getMemoryContext, saveMessage } from './memory.js';
+import { readJSON, writeJSON } from './storage.js';
 import './cron.js';
 
 const app  = express();
@@ -85,12 +86,14 @@ At the start of each conversation you have context about Daniil from past sessio
 - Be concise — no walls of text unless asked
 - No unsolicited validation or encouragement`;
 
-// ── In-memory session history ───────────────────────────────────
-const sessions = new Map();
-
+// ── Persistent session history ──────────────────────────────────
 function getHistory(sessionId) {
-  if (!sessions.has(sessionId)) sessions.set(sessionId, []);
-  return sessions.get(sessionId);
+  return readJSON(`session_${sessionId}.json`, []);
+}
+
+function saveHistory(sessionId, history) {
+  if (history.length > 40) history = history.slice(-40);
+  writeJSON(`session_${sessionId}.json`, history);
 }
 
 // ── Tool call parser ────────────────────────────────────────────
@@ -320,7 +323,7 @@ app.post('/chat', async (req, res) => {
     // Persist the full conversation turn to history
     history.push({ role: 'user',      content: message.trim() });
     history.push({ role: 'assistant', content: fullAssistantText });
-    if (history.length > 40) history.splice(0, history.length - 40);
+    saveHistory(sessionId, history);
 
     // Persist to long-term SQLite memory
     saveMessage(sessionId, 'user',      message.trim());
@@ -337,7 +340,7 @@ app.post('/chat', async (req, res) => {
 
 // ── DELETE /session/:id — clear history ─────────────────────────
 app.delete('/session/:id', (req, res) => {
-  sessions.delete(req.params.id);
+  writeJSON(`session_${req.params.id}.json`, []);
   res.json({ ok: true });
 });
 
