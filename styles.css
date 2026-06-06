@@ -1129,3 +1129,26 @@ textarea { resize: none; border: none; outline: none; font-family: var(--font-ui
   #input-footer { max-width: 100%; }
   #api-banner { padding: 8px 16px; }
 }
+
+/* ── Code plan block ───────────────────────────────────────── */
+#code-plan {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(200,169,110,0.04);
+  font-size: 12px;
+}
+#code-plan-title {
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--warn); margin-bottom: 8px; opacity: 0.8;
+}
+#code-plan-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.code-plan-step { display: flex; gap: 8px; color: var(--text-secondary); line-height: 1.5; }
+.code-plan-step-num { color: var(--warn); font-family: var(--font-mono); font-size: 11px; min-width: 16px; opacity: 0.7; flex-shrink: 0; }
+#code-plan-risks { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-soft); }
+#code-plan-risks-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--danger); opacity: 0.6; margin-bottom: 4px;
+}
+.code-plan-risk { color: var(--text-muted); font-size: 11px; line-height: 1.5; }

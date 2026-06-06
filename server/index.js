@@ -6,6 +6,7 @@ import { executeTool } from './tools/code.js';
 import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
 import { deployCheck } from './tools/deploy.js';
 import { runPlanner } from './planner.js';
+import { runCodeAgent } from './code-agent.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import './cron.js';
 
@@ -303,6 +304,28 @@ app.post('/chat', async (req, res) => {
     send({ type: 'error', message: err?.message ?? 'Unknown error' });
     res.end();
   }
+});
+
+// ── POST /code — two-step coding agent ──────────────────────────
+app.post('/code', async (req, res) => {
+  const { task } = req.body;
+
+  if (!task || typeof task !== 'string' || !task.trim()) {
+    return res.status(400).json({ error: 'task is required' });
+  }
+  if (!process.env.OPENROUTER_API_KEY) {
+    return res.status(500).json({ error: 'OPENROUTER_API_KEY not configured' });
+  }
+
+  res.setHeader('Content-Type',      'text/event-stream');
+  res.setHeader('Cache-Control',     'no-cache');
+  res.setHeader('Connection',        'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+
+  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+  await runCodeAgent(task.trim(), send);
+  res.end();
 });
 
 // ── DELETE /session/:id — clear history ─────────────────────────

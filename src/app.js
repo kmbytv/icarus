@@ -7,8 +7,9 @@ import { toggleSettings, openSettings, dismissBanner, onApiKeyInput, initBanner,
 import {
   handleSend, handleStop, setStatus,
   handleFileSelect, clearAttachment, readFileAsDataUrl,
-  handleCodeSend, switchCodePane, copyCodeTabOutput, runLastCode, clearCodeTab
+  switchCodePane,
 } from './chat.js';
+import { sendToCodeEndpoint, stopCodeAgent, getRawCode, clearCodeOutput } from './code.js';
 
 // ── Expose functions called from inline HTML handlers ────────
 window.toggleSidebar   = toggleSidebar;
@@ -25,10 +26,16 @@ window.onApiKeyInput   = onApiKeyInput;
 window.clearAttachment = clearAttachment;
 window.handleFileSelect = handleFileSelect;
 window.switchCodePane  = switchCodePane;
-window.copyCode        = copyCodeTabOutput;    // code tab copy button
+window.copyCode        = () => {               // code tab copy button
+  const code = getRawCode();
+  if (!code) return;
+  navigator.clipboard?.writeText(code);
+  const btn = document.getElementById('cr-copy');
+  if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); }
+};
 window.copyCodeBlock   = copyCodeBlock;        // inline markdown copy buttons
-window.runLastCode     = runLastCode;
-window.clearCodeTab    = clearCodeTab;
+window.runLastCode     = () => {};             // no-op; run via /chat tab instead
+window.clearCodeTab    = clearCodeOutput;
 window.handleCodeSend  = handleCodeSend;
 
 // ── Clock & uptime ──────────────────────────────────────────
@@ -136,6 +143,16 @@ input.addEventListener('paste', e => {
 const codeInput   = document.getElementById('code-input');
 const codeSendBtn = document.getElementById('code-send-btn');
 const codeOuter   = document.getElementById('code-input-outer');
+
+function handleCodeSend() {
+  const task = codeInput.value.trim();
+  if (!task) return;
+  codeInput.value = '';
+  codeInput.style.height = 'auto';
+  codeSendBtn.classList.remove('ready');
+  sendToCodeEndpoint(task);
+}
+window.handleCodeSend = handleCodeSend;
 
 codeInput.addEventListener('focus',  () => codeOuter.classList.add('focused'));
 codeInput.addEventListener('blur',   () => codeOuter.classList.remove('focused'));
