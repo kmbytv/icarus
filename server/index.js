@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import client from './openrouter.js';
 import { executeTool } from './tools/code.js';
+import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import './cron.js';
 
@@ -35,7 +36,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // ── System prompt with tool descriptions ────────────────────────
-const TOOLS_SYSTEM = `You are KAI, a personal AI agent. You have access to three tools you can invoke at any point in your response.
+const TOOLS_SYSTEM = `You are KAI, a personal AI agent. You have access to tools you can invoke at any point in your response.
 
 To call a tool, output a JSON block on its own line in this exact format:
 {"tool":"<tool_name>","args":{...}}
@@ -50,7 +51,6 @@ Available tools:
 1. code_execute — Run JavaScript code in a sandboxed Node.js vm.
    Args: { "language": "javascript", "code": "<code string>" }
    Returns: { "output": "..." } or { "error": "..." }
-   Use this to compute things, run algorithms, process data.
 
 2. code_write — Write a file to the workspace.
    Args: { "filename": "example.js", "content": "<file content>" }
@@ -60,11 +60,24 @@ Available tools:
    Args: { "filename": "example.js" }
    Returns: { "content": "..." } or { "error": "..." }
 
+4. github_read_file — Read a file from the GitHub repo kmbytv/icarus (branch gh-pages).
+   Args: { "path": "index.html" }
+   Returns: { "content": "...", "sha": "..." } or { "error": "..." }
+
+5. github_write_file — Create or update a file in the GitHub repo and commit it.
+   Args: { "path": "server/index.js", "content": "<full file content>", "message": "commit message" }
+   Returns: { "commit_url": "..." } or { "error": "..." }
+
+6. github_list_files — List files and folders in a directory of the repo.
+   Args: { "dir_path": "server" }
+   Returns: array of { name, path, type } or { "error": "..." }
+
 Rules:
 - Only call one tool per JSON block.
 - Always wait for the tool result before continuing.
 - If a tool returns an error, explain it to the user and suggest a fix.
-- Never fabricate tool results — only use what is returned.`;
+- Never fabricate tool results — only use what is returned.
+- When modifying repo files with github_write_file, always read the file first with github_read_file.`;
 
 // ── In-memory session history ───────────────────────────────────
 const sessions = new Map();
@@ -134,6 +147,46 @@ app.post('/chat', async (req, res) => {
         tools: [
           { type: 'openrouter:web_search' },
           { type: 'openrouter:web_fetch' },
+          {
+            type: 'function',
+            function: {
+              name: 'github_read_file',
+              description: 'Читает файл из GitHub репо kmbytv/icarus',
+              parameters: {
+                type: 'object',
+                properties: { path: { type: 'string', description: 'Путь к файлу, например index.html или server/index.js' } },
+                required: ['path'],
+              },
+            },
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'github_write_file',
+              description: 'Записывает или обновляет файл в GitHub репо kmbytv/icarus и делает коммит',
+              parameters: {
+                type: 'object',
+                properties: {
+                  path:    { type: 'string' },
+                  content: { type: 'string', description: 'Полное содержимое файла' },
+                  message: { type: 'string', description: 'Сообщение коммита' },
+                },
+                required: ['path', 'content', 'message'],
+              },
+            },
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'github_list_files',
+              description: 'Возвращает список файлов в директории репо',
+              parameters: {
+                type: 'object',
+                properties: { dir_path: { type: 'string', description: 'Путь к папке, например server или .' } },
+                required: ['dir_path'],
+              },
+            },
+          },
         ],
       });
 
@@ -174,7 +227,13 @@ app.post('/chat', async (req, res) => {
       }
 
       // Execute tool, feed result back as a new user message, loop
-      const result = await executeTool(toolCall.toolName, toolCall.args);
+      let result;
+      switch (toolCall.toolName) {
+        case 'github_read_file':  result = await githubReadFile(toolCall.args.path);                                              break;
+        case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
+        case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                         break;
+        default:                  result = await executeTool(toolCall.toolName, toolCall.args);
+      }
       const resultLine = JSON.stringify({ tool_result: result });
 
       send({ type: 'tool_result', tool: toolCall.toolName, result });
