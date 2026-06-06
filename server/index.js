@@ -149,46 +149,6 @@ app.post('/chat', async (req, res) => {
         tools: [
           { type: 'openrouter:web_search' },
           { type: 'openrouter:web_fetch' },
-          {
-            type: 'function',
-            function: {
-              name: 'github_read_file',
-              description: 'Читает файл из GitHub репо kmbytv/icarus',
-              parameters: {
-                type: 'object',
-                properties: { path: { type: 'string', description: 'Путь к файлу, например index.html или server/index.js' } },
-                required: ['path'],
-              },
-            },
-          },
-          {
-            type: 'function',
-            function: {
-              name: 'github_write_file',
-              description: 'Записывает или обновляет файл в GitHub репо kmbytv/icarus и делает коммит',
-              parameters: {
-                type: 'object',
-                properties: {
-                  path:    { type: 'string' },
-                  content: { type: 'string', description: 'Полное содержимое файла' },
-                  message: { type: 'string', description: 'Сообщение коммита' },
-                },
-                required: ['path', 'content', 'message'],
-              },
-            },
-          },
-          {
-            type: 'function',
-            function: {
-              name: 'github_list_files',
-              description: 'Возвращает список файлов в директории репо',
-              parameters: {
-                type: 'object',
-                properties: { dir_path: { type: 'string', description: 'Путь к папке, например server или .' } },
-                required: ['dir_path'],
-              },
-            },
-          },
         ],
       });
 
