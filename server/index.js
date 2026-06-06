@@ -128,9 +128,13 @@ app.post('/chat', async (req, res) => {
     // Tool loop — runs until the model stops emitting tool calls
     while (true) {
       const stream = await client.chat.completions.create({
-        model:  'google/gemini-2.5-flash',
+        model:  'deepseek/deepseek-v4-flash',
         stream: true,
         messages,
+        tools: [
+          { type: 'openrouter:web_search' },
+          { type: 'openrouter:web_fetch' },
+        ],
       });
 
       let turnText = '';
