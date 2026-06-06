@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KAI — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    :root {
+      --bg:             #0C0C0D;
+      --surface:        #141415;
+      --surface-raise:  #1C1C1E;
+      --surface-hover:  #232325;
+      --surface-side:   #0F0F10;
+      --border:         #262628;
+      --border-soft:    #1C1C1E;
+      --text-primary:   #F5F5F4;
+      --text-secondary: #A1A1A0;
+      --text-muted:     #6B6B6A;
+      --text-faint:     #404040;
+      --accent:         #E8E8E6;
+      --accent-dim:     #3A3A3C;
+      --danger:         #E5484D;
+      --green:          #3DD68C;
+      --warn:           #C8A96E;
+      --font-mono:      'JetBrains Mono', monospace;
+      --font-ui:        'Geist', sans-serif;
+      --radius-sm:      6px;
+      --radius:         10px;
+      --radius-lg:      14px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 100% 80% at 50% 0%,
+        rgba(255,255,255,0.02) 0%, transparent 60%);
+    }
+    #app { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; }
+    button { cursor: pointer; border: none; background: none; font-family: var(--font-ui); color: inherit; font-size: 13px; }
+    input { border: none; outline: none; font-family: var(--font-mono); }
+    ::-webkit-scrollbar { width: 0; height: 0; }
+    ::selection { background: var(--text-muted); color: var(--text-primary); }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    #header {
+      flex-shrink: 0; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    #header-left { display: flex; align-items: center; gap: 12px; }
+    #back-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      font-size: 12px; font-weight: 500;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    #back-btn:hover { border-color: var(--border); color: var(--text-primary); background: var(--surface-raise); }
+    #back-btn i { font-size: 15px; line-height: 1; }
+    #header-title { font-size: 14px; font-weight: 500; letter-spacing: 0.02em; }
+
+    /* ── Body ──────────────────────────────────────────────── */
+    #body { flex: 1; overflow-y: auto; padding: 0; }
+    #settings-inner {
+      max-width: 640px; margin: 0 auto;
+      padding: 40px 24px 60px;
+      display: flex; flex-direction: column; gap: 32px;
+    }
+
+    /* ── Section ────────────────────────────────────────── */
+    .section {}
+    .section-title {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 16px;
+    }
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-info { flex: 1; min-width: 0; }
+    .setting-label {
+      font-size: 13px; font-weight: 500;
+      color: var(--text-primary); margin-bottom: 2px;
+    }
+    .setting-desc {
+      font-size: 11px; color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .setting-control { flex-shrink: 0; margin-left: 16px; }
+
+    /* Input */
+    .setting-input {
+      width: 260px; background: var(--surface-raise);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 7px 12px; font-size: 12px;
+      color: var(--text-primary); outline: none;
+      transition: border-color 0.15s;
+    }
+    .setting-input:focus { border-color: var(--text-muted); }
+    .setting-input::placeholder { color: var(--text-muted); }
+
+    /* Select */
+    .setting-select {
+      background: var(--surface-raise);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 7px 12px; font-size: 12px;
+      color: var(--text-primary); outline: none;
+      font-family: var(--font-mono);
+      cursor: pointer;
+    }
+
+    /* Toggle */
+    .toggle-track {
+      width: 36px; height: 20px; border-radius: 10px;
+      background: var(--border); position: relative;
+      transition: background 0.2s; cursor: pointer;
+      flex-shrink: 0;
+    }
+    .toggle-track.on { background: var(--accent-dim); }
+    .toggle-knob {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--text-muted); position: absolute;
+      top: 2px; left: 2px; transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-track.on .toggle-knob {
+      transform: translateX(16px);
+      background: var(--text-primary);
+    }
+
+    /* Button */
+    .setting-btn {
+      padding: 6px 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface-raise);
+      color: var(--text-secondary);
+      font-size: 12px; font-weight: 500;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .setting-btn:hover { border-color: var(--border); color: var(--text-primary); background: var(--surface-hover); }
+    .setting-btn.danger { border-color: rgba(229,72,77,0.3); color: var(--danger); }
+    .setting-btn.danger:hover { background: rgba(229,72,77,0.08); border-color: var(--danger); }
+    .setting-btn.primary { background: var(--accent); border-color: transparent; color: var(--bg); }
+    .setting-btn.primary:hover { background: #FFFFFF; }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-family: var(--font-mono);
+      padding: 3px 8px; border-radius: 4px;
+    }
+    .status-badge.connected {
+      background: rgba(61,214,140,0.08); border: 1px solid rgba(61,214,140,0.2);
+      color: var(--green);
+    }
+    .status-badge.disconnected {
+      background: rgba(200,169,110,0.06); border: 1px solid rgba(200,169,110,0.18);
+      color: var(--warn);
+    }
+    .status-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: currentColor;
+    }
+
+    /* Save indicator */
+    .save-indicator {
+      font-size: 11px; color: var(--green);
+      font-family: var(--font-mono);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .save-indicator.show { opacity: 1; }
+
+    /* Danger zone */
+    .danger-zone .section-card {
+      border-color: rgba(229,72,77,0.2);
+    }
+    .danger-zone .section-title { color: var(--danger); }
+
+    /* About */
+    .about-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 18px;
+    }
+    .about-key {
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-muted); min-width: 100px;
+    }
+    .about-val {
+      font-size: 13px; color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- ── Header ── -->
+  <div id="header">
+    <div id="header-left">
+      <button id="back-btn" onclick="window.location.href='/'">
+        <i class="ti ti-arrow-left"></i> Back
+      </button>
+      <span id="header-title">Settings</span>
+    </div>
+    <div id="save-indicator" class="save-indicator">✓ Saved</div>
+  </div>
+
+  <!-- ── Body ── -->
+  <div id="body">
+    <div id="settings-inner">
+
+      <!-- ── API Keys ── -->
+      <div class="section">
+        <div class="section-title">API Keys</div>
+        <div class="section-card">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">OpenRouter</div>
+              <div class="setting-desc">API key for AI model access</div>
+            </div>
+            <div class="setting-control">
+              <input class="setting-input" id="key-openrouter" type="password" placeholder="sk-or-v1-...">
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">OpenWeather</div>
+              <div class="setting-desc">API key for weather data</div>
+            </div>
+            <div class="setting-control">
+              <input class="setting-input" id="key-openweather" type="password" placeholder="Enter API key">
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Exa Search</div>
+              <div class="setting-desc">API key for web search tool</div>
+            </div>
+            <div class="setting-control">
+              <input class="setting-input" id="key-exa" type="password" placeholder="Enter API key">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Model ── -->
+      <div class="section">
+        <div class="section-title">Model</div>
+        <div class="section-card">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Default Model</div>
+              <div class="setting-desc">AI model used for chat</div>
+            </div>
+            <div class="setting-control">
+              <select class="setting-select" id="model-select">
+                <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash</option>
+                <option value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                <option value="openai/gpt-4o">GPT-4o</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">System Prompt</div>
+              <div class="setting-desc">Custom instructions for the agent</div>
+            </div>
+            <div class="setting-control">
+              <button class="setting-btn" onclick="editSystemPrompt()">Edit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Interface ── -->
+      <div class="section">
+        <div class="section-title">Interface</div>
+        <div class="section-card">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Show Plan Steps</div>
+              <div class="setting-desc">Display agent reasoning before execution</div>
+            </div>
+            <div class="setting-control">
+              <div class="toggle-track" id="toggle-plan" onclick="toggleSwitch('plan')">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Show Tools</div>
+              <div class="setting-desc">Display tool execution chain in sidebar</div>
+            </div>
+            <div class="setting-control">
+              <div class="toggle-track" id="toggle-tools" onclick="toggleSwitch('tools')">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Language</div>
+              <div class="setting-desc">UI language (agent responds in your language)</div>
+            </div>
+            <div class="setting-control">
+              <select class="setting-select" id="lang-select">
+                <option value="auto">Auto (follow input)</option>
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+                <option value="ja">日本語</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Danger Zone ── -->
+      <div class="section danger-zone">
+        <div class="section-title">Danger Zone</div>
+        <div class="section-card">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Clear Chat History</div>
+              <div class="setting-desc">Delete all messages and sessions</div>
+            </div>
+            <div class="setting-control">
+              <button class="setting-btn danger" onclick="clearHistory()">Clear</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Reset All Settings</div>
+              <div class="setting-desc">Restore default configuration</div>
+            </div>
+            <div class="setting-control">
+              <button class="setting-btn danger" onclick="resetSettings()">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── About ── -->
+      <div class="section">
+        <div class="section-title">About</div>
+        <div class="section-card">
+          <div class="about-row">
+            <span class="about-key">Version</span>
+            <span class="about-val" id="about-version">1.0.0</span>
+          </div>
+          <div class="about-row">
+            <span class="about-key">Server</span>
+            <span class="about-val">
+              <span class="status-badge disconnected" id="server-status">
+                <span class="status-dot"></span> Checking...
+              </span>
+            </span>
+          </div>
+          <div class="about-row">
+            <span class="about-key">Build</span>
+            <span class="about-val" id="about-build">KAI · icarus</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Load settings from localStorage ────────────────────────────
+  function loadSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem('kai_settings') || '{}');
+      document.getElementById('key-openrouter').value  = s.openrouterKey || '';
+      document.getElementById('key-openweather').value  = s.openweatherKey || '';
+      document.getElementById('key-exa').value           = s.exaKey || '';
+      document.getElementById('model-select').value      = s.model || 'deepseek/deepseek-v4-flash';
+      document.getElementById('lang-select').value       = s.lang || 'auto';
+      setToggle('plan',  s.showPlan !== false);
+      setToggle('tools', s.showTools !== false);
+    } catch {}
+  }
+
+  // ── Save settings to localStorage ──────────────────────────────
+  function saveSettings() {
+    const settings = {
+      openrouterKey:  document.getElementById('key-openrouter').value,
+      openweatherKey: document.getElementById('key-openweather').value,
+      exaKey:         document.getElementById('key-exa').value,
+      model:          document.getElementById('model-select').value,
+      lang:           document.getElementById('lang-select').value,
+      showPlan:       getToggle('plan'),
+      showTools:      getToggle('tools'),
+    };
+    localStorage.setItem('kai_settings', JSON.stringify(settings));
+
+    // Show save indicator
+    const el = document.getElementById('save-indicator');
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 1500);
+
+    // Dispatch event so main page can react
+    window.dispatchEvent(new CustomEvent('kai-settings-changed', { detail: settings }));
+  }
+
+  // ── Auto-save on input ─────────────────────────────────────────
+  document.addEventListener('input', saveSettings);
+  document.addEventListener('change', saveSettings);
+
+  // ── Toggle helpers ────────────────────────────────────────────
+  function toggleSwitch(id) {
+    const track = document.getElementById('toggle-' + id);
+    track.classList.toggle('on');
+    saveSettings();
+  }
+  function setToggle(id, val) {
+    const track = document.getElementById('toggle-' + id);
+    track.classList.toggle('on', val);
+  }
+  function getToggle(id) {
+    return document.getElementById('toggle-' + id).classList.contains('on');
+  }
+
+  // ── Edit system prompt ────────────────────────────────────────
+  function editSystemPrompt() {
+    const current = localStorage.getItem('kai_system_prompt') || '';
+    const text = prompt('Edit system prompt:', current);
+    if (text !== null) {
+      localStorage.setItem('kai_system_prompt', text);
+      saveSettings();
+    }
+  }
+
+  // ── Clear history ─────────────────────────────────────────────
+  function clearHistory() {
+    if (!confirm('Delete all chat history? This cannot be undone.')) return;
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('session_'));
+    keys.forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem('kai_memory');
+    saveSettings();
+  }
+
+  // ── Reset settings ────────────────────────────────────────────
+  function resetSettings() {
+    if (!confirm('Reset all settings to default?')) return;
+    localStorage.removeItem('kai_settings');
+    localStorage.removeItem('kai_system_prompt');
+    loadSettings();
+    saveSettings();
+  }
+
+  // ── Check server health ───────────────────────────────────────
+  async function checkServer() {
+    const base = localStorage.getItem('kai_server_url') || window.location.origin;
+    const statusEl = document.getElementById('server-status');
+    try {
+      const res = await fetch(base + '/health', { signal: AbortSignal.timeout(4000) });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        statusEl.className = 'status-badge connected';
+        statusEl.innerHTML = '<span class="status-dot"></span> Connected';
+      } else {
+        statusEl.className = 'status-badge disconnected';
+        statusEl.innerHTML = '<span class="status-dot"></span> Error';
+      }
+    } catch {
+      statusEl.className = 'status-badge disconnected';
+      statusEl.innerHTML = '<span class="status-dot"></span> Disconnected';
+    }
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  loadSettings();
+  checkServer();
+</script>
+</body>
+</html>
