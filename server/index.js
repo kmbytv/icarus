@@ -4,6 +4,7 @@ import cors from 'cors';
 import client from './openrouter.js';
 import { executeTool } from './tools/code.js';
 import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
+import { deployCheck } from './tools/deploy.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import './cron.js';
 
@@ -72,12 +73,17 @@ Available tools:
    Args: { "dir_path": "server" }
    Returns: array of { name, path, type } or { "error": "..." }
 
+7. deploy_check — после github_write_file подождать и проверить что Railway передеплоил сервер.
+   Args: { "wait_seconds": 45 } (необязательно)
+   Returns: { "success": true/false, "message": "..." }
+
 Rules:
 - Only call one tool per JSON block.
 - Always wait for the tool result before continuing.
 - If a tool returns an error, explain it to the user and suggest a fix.
 - Never fabricate tool results — only use what is returned.
-- When modifying repo files with github_write_file, always read the file first with github_read_file.`;
+- When modifying repo files with github_write_file, always read the file first with github_read_file.
+- deploy_check — использовать ВСЕГДА после github_write_file если менялся серверный код (любой файл в server/). Не использовать если менялся только фронт (index.html, src/, styles.css).`;
 
 // ── In-memory session history ───────────────────────────────────
 const sessions = new Map();
@@ -187,6 +193,23 @@ app.post('/chat', async (req, res) => {
               },
             },
           },
+          {
+            type: 'function',
+            function: {
+              name: 'deploy_check',
+              description: 'После записи файла в GitHub подождать и проверить что Railway успешно передеплоил сервер. Использовать всегда после github_write_file если изменялся серверный код (любой файл в server/).',
+              parameters: {
+                type: 'object',
+                properties: {
+                  wait_seconds: {
+                    type: 'number',
+                    description: 'Сколько секунд ждать перед проверкой. По умолчанию 45.',
+                  },
+                },
+                required: [],
+              },
+            },
+          },
         ],
       });
 
@@ -233,6 +256,7 @@ app.post('/chat', async (req, res) => {
           case 'github_read_file':  result = await githubReadFile(toolCall.args.path);                                                break;
           case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
           case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                           break;
+          case 'deploy_check':      result = await deployCheck(toolCall.args.wait_seconds);                                            break;
           default:                  result = await executeTool(toolCall.toolName, toolCall.args);
         }
       } catch (toolErr) {
