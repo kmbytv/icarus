@@ -148,7 +148,7 @@ app.post('/chat', async (req, res) => {
       const isText  = file.mimeType.startsWith('text/') || /\.(js|ts|py|json|md|css|html|sh|yaml|yml|toml|env)$/i.test(file.name || '');
 
       if (isImage) {
-        modelOverride = 'google/gemini-2.0-flash-exp:free';
+        modelOverride = 'google/gemini-2.5-flash';
         userContent = [
           { type: 'text', text: message.trim() },
           { type: 'image_url', image_url: { url: file.dataUrl } },
