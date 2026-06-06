@@ -5,6 +5,7 @@ import client from './openrouter.js';
 import { executeTool } from './tools/code.js';
 import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
 import { deployCheck } from './tools/deploy.js';
+import { runPlanner } from './planner.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import './cron.js';
 
@@ -143,6 +144,15 @@ app.post('/chat', async (req, res) => {
     ];
 
     let fullAssistantText = '';
+
+    const plan = await runPlanner(message.trim());
+    if (plan) {
+      send({ type: 'plan', steps: plan.steps });
+      messages.push({
+        role: 'user',
+        content: `Before responding, follow this execution plan step by step:\n${plan.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nNow execute the plan for the original request.`,
+      });
+    }
 
     // Tool loop — runs until the model stops emitting tool calls
     while (true) {
