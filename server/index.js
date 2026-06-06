@@ -36,7 +36,7 @@ const corsOptions = {
 
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 // ── System prompt ────────────────────────────────────────────────
 const TOOLS_SYSTEM = `You are KAI — a personal AI agent built for Daniil. You are direct, sharp, and efficient. No filler phrases like "Great question!" or "Of course!". Get to the point.
