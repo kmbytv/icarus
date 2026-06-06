@@ -1365,6 +1365,35 @@
   let lastMsgTime = null;
   const MSG_LIMIT = 50;
 
+  // ── Chat persistence ────────────────────────────────────────
+  const STORAGE_KEY = 'kai_chat_history';
+
+  function saveHistory(role, text) {
+    try {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      history.push({ role, text, ts: Date.now() });
+      // Keep last 100 messages
+      if (history.length > 100) history.splice(0, history.length - 100);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    } catch {}
+  }
+
+  function loadHistory() {
+    try {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      if (!history.length) return;
+      document.getElementById('empty')?.remove();
+      for (const item of history) {
+        if (item.role === 'user') {
+          addMessage('user', item.text);
+        } else if (item.role === 'agent') {
+          const bubble = addMessage('agent', '');
+          renderAgentBody(bubble, item.text);
+        }
+      }
+    } catch {}
+  }
+
   // ── Clock & uptime ──────────────────────────────────────────
   function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -1727,6 +1756,7 @@
     document.getElementById('sidebar-progress-count').textContent = `${msgCount} / ${MSG_LIMIT} msgs`;
   }
   updateProgress();
+  loadHistory();
 
   // ── Feed ─────────────────────────────────────────────────────
   function scrollToBottom() {
@@ -1846,6 +1876,7 @@
 
   function clearFeed() {
     msgCount = 0; lastMsgTime = null; updateProgress();
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
     const wrap = document.getElementById('feed-inner');
     wrap.innerHTML = `
       <div id="empty">
@@ -1942,6 +1973,7 @@
     sendBtn.classList.remove('ready');
     document.getElementById('char-count').textContent = '';
     addMessage('user', text);
+    saveHistory('user', text);
     sendToAgent(text);
   }
 
@@ -2021,7 +2053,10 @@
     } finally {
       cursor.remove();
       // Apply > line highlighting now that full text is known
-      if (accumulated) renderAgentBody(body, accumulated);
+      if (accumulated) {
+        renderAgentBody(body, accumulated);
+        saveHistory('agent', accumulated);
+      }
       setStatus(false);
       scrollToBottom();
       updateScrollThumb();
