@@ -147,8 +147,11 @@ app.post('/chat', async (req, res) => {
     let fullAssistantText = '';
 
     const plan = await runPlanner(message.trim());
+    let activeModel = 'deepseek/deepseek-v4-flash';
+    let useReasoning = false;
     if (plan) {
       send({ type: 'plan', steps: plan.steps });
+      if (plan.model) { activeModel = plan.model; useReasoning = !!plan.reasoning; }
       messages.push({
         role: 'user',
         content: `Before responding, follow this execution plan step by step:\n${plan.steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nNow execute the plan for the original request.`,
@@ -157,10 +160,14 @@ app.post('/chat', async (req, res) => {
 
     // Tool loop — runs until the model stops emitting tool calls
     while (true) {
-      const stream = await client.chat.completions.create({
-        model:  'deepseek/deepseek-v4-flash',
+      const callParams = {
+        model:  activeModel,
         stream: true,
         messages,
+      };
+      if (useReasoning) callParams.reasoning = { enabled: true };
+      const stream = await client.chat.completions.create({
+        ...callParams,
         tools: [
           { type: 'openrouter:web_search' },
           { type: 'openrouter:web_fetch' },

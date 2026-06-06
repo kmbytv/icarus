@@ -7,6 +7,12 @@ const ACTION_VERBS = [
   'integrate','optimize','redesign','setup','deploy',
 ];
 
+const CODING_KEYWORDS = [
+  'код','файл','функция','реализуй','напиши','создай','сделай','добавь','feature',
+  'fix','write','create','implement','build','refactor',
+  'code','function','file','class','module','component','endpoint','api',
+];
+
 export async function runPlanner(message) {
   try {
     const words = message.trim().split(/\s+/);
@@ -44,7 +50,10 @@ Rules:
 
     if (!parsed.needs_plan || !Array.isArray(parsed.steps) || parsed.steps.length === 0) return null;
 
-    return { steps: parsed.steps.slice(0, 5) };
+    const steps = parsed.steps.slice(0, 5);
+    const isCoding = CODING_KEYWORDS.some(k => lower.includes(k));
+    if (isCoding) return { steps, model: 'deepseek/deepseek-v3.2', reasoning: true };
+    return { steps };
   } catch {
     return null;
   }
