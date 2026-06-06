@@ -228,11 +228,16 @@ app.post('/chat', async (req, res) => {
 
       // Execute tool, feed result back as a new user message, loop
       let result;
-      switch (toolCall.toolName) {
-        case 'github_read_file':  result = await githubReadFile(toolCall.args.path);                                              break;
-        case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
-        case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                         break;
-        default:                  result = await executeTool(toolCall.toolName, toolCall.args);
+      try {
+        switch (toolCall.toolName) {
+          case 'github_read_file':  result = await githubReadFile(toolCall.args.path);                                                break;
+          case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
+          case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                           break;
+          default:                  result = await executeTool(toolCall.toolName, toolCall.args);
+        }
+      } catch (toolErr) {
+        console.error('[tool dispatch error]', toolCall.toolName, toolErr?.message ?? toolErr);
+        result = { error: toolErr?.message ?? 'Tool execution failed' };
       }
       const resultLine = JSON.stringify({ tool_result: result });
 
