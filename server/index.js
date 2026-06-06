@@ -5,6 +5,7 @@ import client from './openrouter.js';
 import { executeTool } from './tools/code.js';
 import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
 import { webSearch, webFetch } from './tools/search.js';
+import { getWeather } from './tools/weather.js';
 import { runPlanner } from './planner.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import { readJSON, writeJSON } from './storage.js';
@@ -39,7 +40,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '20mb' }));
 
 // ── System prompt ────────────────────────────────────────────────
-const TOOLS_SYSTEM = `You are KAI — a personal AI agent built for Daniil. You are direct, sharp, and efficient. No filler phrases like "Great question!" or "Of course!". Get to the point.
+const TOOLS_SYSTEM = `You are KAI — a personal AI agent built for Daniil. You are direct, sharp, and efficient. No filler phrases like \"Great question!\" or \"Of course!\". Get to the point.
 
 ## Language
 Respond in the same language the user writes in. If Russian — respond in Russian. If English — in English. Mix is fine.
@@ -71,6 +72,10 @@ github_write_file — use when:
 
 github_list_files — use when:
 - Need to understand project structure before making changes
+
+get_weather — use when:
+- User asks about weather in a specific city
+- Need current temperature, conditions, humidity, wind
 
 code_execute — use when:
 - Need to compute, test, or verify something with code
@@ -256,6 +261,21 @@ app.post('/chat', async (req, res) => {
               },
             },
           },
+          {
+            type: 'function',
+            function: {
+              name: 'get_weather',
+              description: 'Получить текущую погоду в городе. Возвращает температуру, ощущается как, влажность, давление, ветер, описание',
+              parameters: {
+                type: 'object',
+                properties: {
+                  city:  { type: 'string', description: 'Название города (на английском или русском)' },
+                  units: { type: 'string', description: 'Единицы измерения: metric (Цельсий) или imperial (Фаренгейт)', enum: ['metric', 'imperial'] },
+                },
+                required: ['city'],
+              },
+            },
+          },
         ],
       });
 
@@ -316,6 +336,7 @@ app.post('/chat', async (req, res) => {
           case 'github_read_file':  result = await githubReadFile(toolCall.args.path);                                       break;
           case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
           case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                  break;
+          case 'get_weather':       result = await getWeather(toolCall.args.city, toolCall.args.units);                      break;
           default:                  result = await executeTool(toolCall.toolName, toolCall.args);
         }
       } catch (toolErr) {
