@@ -146,10 +146,6 @@ app.post('/chat', async (req, res) => {
         model:  'deepseek/deepseek-v4-flash',
         stream: true,
         messages,
-        tools: [
-          { type: 'openrouter:web_search' },
-          { type: 'openrouter:web_fetch' },
-        ],
       });
 
       let turnText = '';
