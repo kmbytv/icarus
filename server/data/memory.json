@@ -27,7 +27,10 @@
     "User encountered a 'Failed to fetch' error.",
     "The user is checking on the status of changes.",
     "The assistant reports that recent additions (MAX_TOKENS, vitest, CI workflow, test file) do not affect runtime.",
-    "The assistant suspects the 'Failed to fetch' error is due to Railway still redeploying, which takes ~2 minutes."
+    "The assistant suspects the 'Failed to fetch' error is due to Railway still redeploying, which takes ~2 minutes.",
+    "Trigger is on push to gh-pages.",
+    "Currently deployment is to Railway.",
+    "Tests are run before restart."
   ],
-  "updated_at": "2026-06-07T09:29:32.582Z"
+  "updated_at": "2026-06-07T09:31:14.701Z"
 }
