@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "codebase": "node codebase.js"
+    "codebase": "node codebase.js",
+    "test": "vitest run",
+    "test:smoke": "vitest run __tests__/smoke.test.js"
   },
   "engines": {
     "node": ">=18"
@@ -22,5 +24,8 @@
     "express": "^4.19.2",
     "node-cron": "^3.0.3",
     "openai": "^4.52.7"
+  },
+  "devDependencies": {
+    "vitest": "^3.1.1"
   }
 }
