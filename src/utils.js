@@ -18,15 +18,9 @@ marked.setOptions({ breaks: true, gfm: true, highlight: null });
 
 const mdRenderer = new marked.Renderer();
 mdRenderer.code = ({ text, lang }) => {
+  const escaped = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const displayLang = lang || 'code';
-  let highlighted;
-  if (typeof hljs !== 'undefined') {
-    const language = lang && hljs.getLanguage(lang) ? lang : null;
-    highlighted = language ? hljs.highlight(text, { language }).value : hljs.highlightAuto(text).value;
-  } else {
-    highlighted = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-  return `<pre><div class="code-block-header"><span>${displayLang}</span><button class="code-copy-btn" onclick="copyCodeBlock(this)">copy</button></div><code class="hljs language-${displayLang}">${highlighted}</code></pre>`;
+  return `<pre><div class="code-block-header"><span>${displayLang}</span><button class="code-copy-btn" onclick="copyCodeBlock(this)">copy</button></div><code>${escaped}</code></pre>`;
 };
 marked.use({ renderer: mdRenderer });
 
