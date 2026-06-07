@@ -58,7 +58,10 @@
     "Пользователь строит AI-систему KAI для персонализированного обучения с бюджетом на API $10.",
     "Пользователь использует стек Node.js, Python, Telegram боты, n8n и API Claude/Gemini.",
     "Память ассистента сейчас хранится в простом JSON-файле memory_core.json",
-    "Планируется ввести типизацию фактов: user_info, preferences, project_state, learning_progress"
+    "Планируется ввести типизацию фактов: user_info, preferences, project_state, learning_progress",
+    "Цель KAI — заменить Claude Chat для учёбы с помощью RAG и методик Гарварда/Стэнфорда.",
+    "План учёбы — 3 сессии в день по часу.",
+    "DeepSeek V4 Pro израсходовал $0.50 на одной задаче, что стало причиной перехода на Flash."
   ],
-  "updated_at": "2026-06-07T10:56:28.935Z"
+  "updated_at": "2026-06-07T11:03:30.832Z"
 }
