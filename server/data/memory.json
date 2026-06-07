@@ -11,7 +11,10 @@
     "Assistant can already perform multiple steps in a single response sequentially.",
     "The user's issue is not about multi-agent architecture but about a timeout limitation.",
     "Assistant has full access to kmbytv/icarus repository on branch gh-pages.",
-    "Assistant can read and rewrite any files in that repository."
+    "Assistant can read and rewrite any files in that repository.",
+    "The assistant's default token limit on OpenRouter is 4K-8K tokens.",
+    "The current token limit is set to 32K, allowing up to 20-25 thousand words per response.",
+    "The token limit can be increased to 64K by setting MAX_TOKENS in Railway."
   ],
-  "updated_at": "2026-06-07T08:41:19.674Z"
+  "updated_at": "2026-06-07T08:54:12.829Z"
 }
