@@ -19,7 +19,25 @@ function resolveEnv(obj) {
   return result;
 }
 
+// Gracefully disconnect all existing MCP clients
+async function disconnectAll() {
+  const names = [...connections.keys()];
+  for (const name of names) {
+    try {
+      const conn = connections.get(name);
+      await conn.client.close();
+      console.log(`[mcp] disconnected: ${name}`);
+    } catch (err) {
+      console.warn(`[mcp] error disconnecting ${name}:`, err.message);
+    }
+    connections.delete(name);
+  }
+}
+
 export async function initMCP() {
+  // Clean up old connections first (hot-reload safe)
+  await disconnectAll();
+
   let config;
   try {
     const raw = await fs.readFile(CONFIG_PATH, 'utf8');
@@ -29,12 +47,14 @@ export async function initMCP() {
     return;
   }
 
+  let connected = 0, skipped = 0, failed = 0;
+
   for (const [name, def] of Object.entries(config.servers ?? {})) {
     if (def.disabled) continue;
     // Skip if required env var is missing
     const resolvedEnv = resolveEnv(def.env);
     const hasToken = Object.values(resolvedEnv).some(v => v.trim() !== '');
-    if (!hasToken) { console.log(`[mcp] skipping ${name}: no token`); continue; }
+    if (!hasToken) { skipped++; continue; }
 
     try {
       const transport = new StdioClientTransport({
@@ -48,11 +68,15 @@ export async function initMCP() {
 
       const { tools } = await client.listTools();
       connections.set(name, { client, tools });
+      connected++;
       console.log(`[mcp] connected: ${name} (${tools.length} tools)`);
     } catch (err) {
+      failed++;
       console.error(`[mcp] failed to connect ${name}:`, err.message);
     }
   }
+
+  return { connected, skipped, failed };
 }
 
 // Returns all tools in OpenAI function-calling format
@@ -95,4 +119,13 @@ export async function callMCPTool(fullName, args) {
 
 export function isMCPTool(name) {
   return name.startsWith('mcp__');
+}
+
+// Expose connection status for /reload and /status endpoints
+export function getMCPStatus() {
+  const status = {};
+  for (const [name, { tools }] of connections) {
+    status[name] = { tools: tools.length, connected: true };
+  }
+  return status;
 }
