@@ -133,6 +133,11 @@ app.post('/chat', async (req, res) => {
   res.setHeader('X-Accel-Buffering', 'no');
 
   const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const ping = () => res.write(': ping\n\n');
+
+  // Keep-alive: send SSE comments every 20s so Railway doesn't kill the connection
+  const heartbeat = setInterval(ping, 20000);
+  res.on('close', () => clearInterval(heartbeat));
 
   try {
     console.log('[chat] incoming:', sessionId, JSON.stringify(message).slice(0, 80));
@@ -376,6 +381,8 @@ app.post('/chat', async (req, res) => {
     console.error('[/chat error]', err?.message ?? err);
     send({ type: 'error', message: err?.message ?? 'Unknown error' });
     res.end();
+  } finally {
+    clearInterval(heartbeat);
   }
 });
 
