@@ -817,6 +817,21 @@
     .msg-row.from-user  .msg-bubble::after { right: 0; }
     .msg-bubble:hover::after { opacity: 1; }
 
+    .agent-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 20px;
+      margin-bottom: 6px;
+      opacity: .7;
+    }
+    .agent-badge.chat   { background: rgba(99,102,241,.15); color: #818cf8; }
+    .agent-badge.reason { background: rgba(245,158,11,.15); color: #fbbf24; }
+    .agent-badge.code   { background: rgba(16,185,129,.15); color: #34d399; }
+
     /* Extra bottom padding so timestamp doesn't overlap next message */
     .msg-row:last-child { margin-bottom: 10px; }
 
@@ -2271,7 +2286,13 @@
           let event;
           try { event = JSON.parse(line.slice(6)); } catch { continue; }
 
-          if (event.type === 'plan' && Array.isArray(event.steps) && !planInserted) {
+          if (event.type === 'agent') {
+            const labels = { chat: 'Chat', reason: 'Reasoning', code: 'Code Agent' };
+            const badge = document.createElement('div');
+            badge.className = `agent-badge ${event.agent}`;
+            badge.textContent = labels[event.agent] ?? event.agent;
+            body.insertAdjacentElement('beforebegin', badge);
+          } else if (event.type === 'plan' && Array.isArray(event.steps) && !planInserted) {
             planInserted = true;
             const planEl = document.createElement('div');
             planEl.className = 'plan-block';
@@ -2282,6 +2303,13 @@
             }</ol>`;
             body.insertAdjacentElement('beforebegin', planEl);
             scrollToBottom();
+          } else if (event.type === 'code_delta' && event.text) {
+            accumulated += event.text;
+            cursor.remove();
+            body.innerHTML = marked.parse('```\n' + accumulated + '\n```');
+            body.appendChild(cursor);
+            scrollToBottom();
+            updateScrollThumb();
           } else if (event.type === 'delta' && event.text) {
             accumulated += event.text;
             // Re-render markdown on each delta; keep cursor at end

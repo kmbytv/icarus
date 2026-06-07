@@ -8,6 +8,7 @@ import { webSearch, webFetch } from './tools/search.js';
 import { getWeather } from './tools/weather.js';
 import { runPlanner } from './planner.js';
 import { runCodeAgent } from './code-agent.js';
+import { classifyTask } from './router.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import { readJSON, writeJSON } from './storage.js';
 import './cron.js';
@@ -188,6 +189,29 @@ app.post('/chat', async (req, res) => {
       { role: 'user', content: userContent },
     ];
 
+    // ── Route to specialized agent if needed ────────────────────
+    const route = classifyTask(message.trim());
+    console.log('[chat] route:', route);
+    send({ type: 'agent', agent: route });
+
+    if (route === 'code' && !modelOverride) {
+      // Hand off to the two-step code agent (architect → coder)
+      await runCodeAgent(message.trim(), send);
+      history.push({ role: 'user',      content: message.trim() });
+      history.push({ role: 'assistant', content: '[code agent]' });
+      saveHistory(sessionId, history);
+      saveMessage(sessionId, 'user',      message.trim());
+      saveMessage(sessionId, 'assistant', '[code agent]');
+      send({ type: 'done' });
+      return res.end();
+    }
+
+    // For reasoning tasks use deepseek-v4-pro with thinking enabled
+    const reasonModel  = 'deepseek/deepseek-v4-pro';
+    const finalModel   = (route === 'reason' && !modelOverride) ? reasonModel : activeModel;
+    const useThinking  = route === 'reason' && !modelOverride;
+    console.log('[chat] using model:', finalModel, useThinking ? '(thinking)' : '');
+
     let fullAssistantText = '';
     let toolRoundCount = 0;
 
@@ -196,10 +220,15 @@ app.post('/chat', async (req, res) => {
 
     while (true) {
       console.log('[chat] calling OpenRouter...');
-      const stream = await client.chat.completions.create({
-        model: activeModel,
+      const streamParams = {
+        model: finalModel,
         stream: true,
         messages,
+      };
+      if (useThinking) streamParams.reasoning = { enabled: true };
+
+      const stream = await client.chat.completions.create({
+        ...streamParams,
         tools: [
           {
             type: 'function',
