@@ -11,6 +11,7 @@ import { runCodeAgent } from './code-agent.js';
 import { classifyTask } from './router.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import { readJSON, writeJSON } from './storage.js';
+import { initMCP, getMCPTools, callMCPTool, isMCPTool } from './mcp-client.js';
 import './cron.js';
 
 const app  = express();
@@ -316,6 +317,7 @@ app.post('/chat', async (req, res) => {
               },
             },
           },
+          ...getMCPTools(),
         ],
       });
 
@@ -373,7 +375,13 @@ app.post('/chat', async (req, res) => {
           case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
           case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                  break;
           case 'get_weather':       result = await getWeather(toolCall.args.city, toolCall.args.units);                      break;
-          default:                  result = await executeTool(toolCall.toolName, toolCall.args);
+          default:
+            if (isMCPTool(toolCall.toolName)) {
+              result = await callMCPTool(toolCall.toolName, toolCall.args);
+            } else {
+              result = await executeTool(toolCall.toolName, toolCall.args);
+            }
+            break;
         }
       } catch (toolErr) {
         console.error('[tool dispatch error]', toolCall.toolName, toolErr?.message ?? toolErr);
@@ -456,4 +464,6 @@ app.delete('/session/:id', (req, res) => {
 // ── Health check ────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-app.listen(PORT, () => console.log(`KAI backend listening on :${PORT}`));
+initMCP().then(() => {
+  app.listen(PORT, () => console.log(`KAI backend listening on :${PORT}`));
+});

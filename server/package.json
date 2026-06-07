@@ -13,6 +13,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^21.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
