@@ -14,7 +14,7 @@ import { classifyTask } from './router.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import { readJSON, writeJSON } from './storage.js';
 import { initMCP, getMCPTools, callMCPTool, isMCPTool } from './mcp-client.js';
-import { searchMemory, saveMemory } from './memory-vector.js';
+import { loadMemory, getMemoryPrompt, extractAndSaveFacts } from './tools/persistent-memory.js';
 import './cron.js';
 
 const app  = express();
@@ -154,24 +154,13 @@ app.post('/chat', async (req, res) => {
     console.log('[chat] incoming:', sessionId, JSON.stringify(message).slice(0, 80));
     const history = getHistory(sessionId);
 
-    // ── Build system prompt with vector memory ──────────────────
+    // ── Build system prompt ──────────────────────────────────────
     const memoryContext = getMemoryContext();
-
-    // Search vector memory for relevant facts about this user/message
-    let vectorMemories = [];
-    if (process.env.VECTOR_MEMORY === 'true') {
-      try {
-        vectorMemories = await searchMemory(message.trim(), sessionId, 5);
-      } catch (e) {
-        console.error('[chat] vector search error:', e.message);
-      }
-    }
+    const persistentMemory = getMemoryPrompt();
 
     const sysContent = [
       memoryContext ? `## Контекст из памяти\n${memoryContext}\n` : '',
-      vectorMemories.length > 0
-        ? `## Векторные воспоминания\n${vectorMemories.map(t => `- ${t}`).join('\n')}\n`
-        : '',
+      persistentMemory,
       TOOLS_SYSTEM,
       systemPrompt?.trim() ? `\nAdditional instructions:\n${systemPrompt.trim()}` : '',
     ].join('');
@@ -227,10 +216,7 @@ app.post('/chat', async (req, res) => {
       saveMessage(sessionId, 'user',      message.trim());
       saveMessage(sessionId, 'assistant', '[code agent]');
 
-      // Save to vector memory
-      if (process.env.VECTOR_MEMORY === 'true') {
-        saveMemory(sessionId, `User asked coding task: ${message.trim().slice(0, 500)}`);
-      }
+      extractAndSaveFacts(sessionId, message.trim(), '[code agent]', process.env.OPENROUTER_API_KEY);
 
       send({ type: 'done' });
       return res.end();
@@ -481,14 +467,8 @@ app.post('/chat', async (req, res) => {
     saveMessage(sessionId, 'user',      message.trim());
     saveMessage(sessionId, 'assistant', fullAssistantText);
 
-    // ── Save to vector memory ─────────────────────────────────
-    if (process.env.VECTOR_MEMORY === 'true') {
-      // Save user message
-      saveMemory(sessionId, message.trim().slice(0, 2000));
-      // Save assistant response (first meaningful 500 chars)
-      const summary = textOnlyAssistant?.slice(0, 500) || '';
-      if (summary) saveMemory(sessionId, summary);
-    }
+    // Fire-and-forget: extract and persist facts from this conversation turn
+    extractAndSaveFacts(sessionId, message.trim(), textOnlyAssistant, process.env.OPENROUTER_API_KEY);
 
     send({ type: 'done' });
     res.end();
@@ -580,7 +560,8 @@ app.post('/integrations', async (req, res) => {
 // ── Health check ────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-initMCP().then(() => {
+initMCP().then(async () => {
+  await loadMemory();
   app.listen(PORT, () => {
     console.log(`KAI backend listening on :${PORT}`);
     console.log(`[startup] GITHUB_TOKEN: ${process.env.GITHUB_TOKEN ? 'SET (' + process.env.GITHUB_TOKEN.slice(0,6) + '...)' : 'NOT SET — github_write_file will fail'}`);
