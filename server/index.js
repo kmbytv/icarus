@@ -4,7 +4,7 @@ import cors from 'cors';
 import client from './openrouter.js';
 import { executeTool } from './tools/code.js';
 import { runCode } from './tools/runner.js';
-import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
+import { githubReadFile, githubWriteFile, githubListFiles, githubCheckAccess } from './tools/github.js';
 import { webSearch, webFetch } from './tools/search.js';
 import { getWeather } from './tools/weather.js';
 import { initiateConnection, getConnectionStatus, getComposioTools, executeComposioAction, isComposioTool } from './tools/composio.js';
@@ -49,56 +49,61 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '20mb' }));
 
 // ── System prompt ────────────────────────────────────────────────
-const TOOLS_SYSTEM = `You are KAI — a personal AI agent built for Daniil. You are direct, sharp, and efficient. No filler phrases like \"Great question!\" or \"Of course!\". Get to the point.
+const TOOLS_SYSTEM = `You are KAI — a personal AI agent built for Daniil. You are direct, sharp, and efficient. No filler phrases like "Great question!" or "Of course!". Get to the point.
 
 ## Language
 Respond in the same language the user writes in. If Russian — respond in Russian. If English — in English. Mix is fine.
 
 ## Who you are
-You are Daniil's personal agent. You know him well — he is 17, lives in the Russian Far East, planning to move to Japan, learning Japanese and economics, runs freelance AI projects (Fiverr/Workzilla), building this agent (KAI) himself. His main stack: Node.js, Python, Telegram bots, n8n, Claude/Gemini APIs.
+You are Daniil's personal agent. He is 17, lives in the Russian Far East, planning to move to Japan, learning Japanese and economics, runs freelance AI projects (Fiverr/Workzilla), building this agent (KAI) himself. His main stack: Node.js, Python, Telegram bots, n8n, Claude/Gemini APIs.
 
-## Tools — when to use what
+## Your own codebase — repo: kmbytv/icarus, branch: gh-pages
+You CAN read and modify your own source code. Key files:
+- server/index.js       — main Express server, tool dispatch, system prompt (THIS file)
+- server/router.js      — classifies tasks: chat / reason / code
+- server/code-agent.js  — two-step coding agent (architect + coder + run loop)
+- server/planner.js     — task planner for non-chat routes
+- server/memory.js      — in-memory context across turns
+- server/mcp-client.js  — MCP protocol client
+- server/tools/github.js    — GitHub read/write/list/check
+- server/tools/runner.js    — real code execution (Node/Python/Bash in sandbox)
+- server/tools/composio.js  — Composio OAuth integrations
+- server/tools/search.js    — web search + fetch
+- server/tools/weather.js   — weather API
+- index.html            — frontend (all-in-one, no build step)
+- mcp.config.json       — MCP server configs
 
-web_search — use when:
-- Asked about current events, news, prices, people
-- Need information that could have changed recently
-- Researching anything technical or factual
-Always search before answering if there's any chance your knowledge is outdated.
+## Self-modification protocol
+When asked to improve yourself or fix a bug:
+1. github_list_files to confirm path exists (if unsure)
+2. github_read_file — read the current file fully
+3. Make precise targeted changes (never rewrite entire files unless necessary)
+4. github_write_file — write back with descriptive commit message
+5. Tell Daniil: "Done. Railway will redeploy in ~2 min."
+NEVER skip step 2 — you need the full current content to write correctly.
+NEVER write partial files — always include the complete file content.
 
-web_fetch — use after web_search when:
-- A specific URL looks highly relevant and you need full content
-- User gives you a URL to read
+## Tools
 
-github_read_file — use when:
-- Need to look at current code before suggesting changes
-- User asks about how something works in the project
-- Always read before writing
+web_search — current events, news, prices, anything that could have changed
+web_fetch   — read a specific URL in full (use after search)
 
-github_write_file — use when:
-- User explicitly asks to change or create a file
-- Always read the file first to get the SHA, then write
-- Commit message should be clear and descriptive
+github_read_file   — read any file from the repo (always do this before writing)
+github_write_file  — write/update a file and commit (SHA is handled automatically)
+github_list_files  — list files in a directory
+github_check_access — verify GitHub token and write permissions (run first if write fails)
 
-github_list_files — use when:
-- Need to understand project structure before making changes
-
-get_weather — use when:
-- User asks about weather in a specific city
-- Need current temperature, conditions, humidity, wind
-
-code_execute — use when:
-- Need to compute, test, or verify something with code
-- User asks for calculations or data processing
+get_weather — current weather by city
+code_run    — execute code in sandbox (Node.js, Python, Bash) — use for calculations and tests
 
 ## Memory
-At the start of each conversation you have context about Daniil from past sessions. Use it naturally — do not announce it, just apply it.
+Context from past sessions is provided at the start. Use it naturally — don't announce it.
 
 ## Rules
-- Never make up information — search or say you don't know
-- Read before you write (files)
-- Search before you answer (current info)
+- Never fabricate — search or admit you don't know
+- Always read a file before writing it
 - Be concise — no walls of text unless asked
-- No unsolicited validation or encouragement`;
+- No validation or filler phrases`;
 
 // ── Persistent session history ──────────────────────────────────
 function getHistory(sessionId) {
@@ -318,12 +323,20 @@ app.post('/chat', async (req, res) => {
             type: 'function',
             function: {
               name: 'github_list_files',
-              description: 'Возвращает список файлов в директории репо',
+              description: 'Возвращает список файлов в директории репо kmbytv/icarus (ветка gh-pages)',
               parameters: {
                 type: 'object',
                 properties: { dir_path: { type: 'string', description: 'Путь к папке, например server или .' } },
                 required: ['dir_path'],
               },
+            },
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'github_check_access',
+              description: 'Проверяет GitHub токен и права на запись. Запускай если github_write_file вернул ошибку.',
+              parameters: { type: 'object', properties: {} },
             },
           },
           {
@@ -411,9 +424,10 @@ app.post('/chat', async (req, res) => {
         switch (toolCall.toolName) {
           case 'web_search':        result = await webSearch(toolCall.args.query, { numResults: toolCall.args.numResults }); break;
           case 'web_fetch':         result = await webFetch(toolCall.args.url);                                              break;
-          case 'github_read_file':  result = await githubReadFile(toolCall.args.path);                                       break;
-          case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
-          case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                  break;
+          case 'github_read_file':    result = await githubReadFile(toolCall.args.path);                                             break;
+          case 'github_write_file':   result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
+          case 'github_list_files':   result = await githubListFiles(toolCall.args.dir_path);                                          break;
+          case 'github_check_access': result = await githubCheckAccess();                                                              break;
           case 'get_weather':       result = await getWeather(toolCall.args.city, toolCall.args.units);                      break;
           case 'code_run':          result = await runCode(toolCall.args);                                                    break;
           default:
@@ -567,5 +581,9 @@ app.post('/integrations', async (req, res) => {
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 initMCP().then(() => {
-  app.listen(PORT, () => console.log(`KAI backend listening on :${PORT}`));
+  app.listen(PORT, () => {
+    console.log(`KAI backend listening on :${PORT}`);
+    console.log(`[startup] GITHUB_TOKEN: ${process.env.GITHUB_TOKEN ? 'SET (' + process.env.GITHUB_TOKEN.slice(0,6) + '...)' : 'NOT SET — github_write_file will fail'}`);
+    console.log(`[startup] OPENROUTER_API_KEY: ${process.env.OPENROUTER_API_KEY ? 'SET' : 'NOT SET'}`);
+  });
 });
