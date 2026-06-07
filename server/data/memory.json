@@ -44,7 +44,9 @@
     "The last commit deployed via GitHub is 'memory: add 1 fact(s)' with path '/server'.",
     "Railway correctly identifies '/server' as the project root directory.",
     "npm ci failed because package-lock.json was out of sync with package.json.",
-    "The lock file in server/ was not properly updated or was committed in an outdated state."
+    "The lock file in server/ was not properly updated or was committed in an outdated state.",
+    "Claude Sonnet in code-agent.js costs $0.50 per request.",
+    "The deepseek model in index.js is much cheaper at $0.15/$0.60 per 1M tokens."
   ],
-  "updated_at": "2026-06-07T10:13:16.513Z"
+  "updated_at": "2026-06-07T10:18:28.282Z"
 }
