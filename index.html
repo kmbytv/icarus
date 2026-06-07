@@ -328,15 +328,8 @@
 
     .sidebar-divider { height: 1px; background: var(--border-soft); margin: 4px 0; }
 
-    /* Settings panel */
-    #settings-panel {
-      display: none; flex-direction: column; gap: 10px;
-      padding: 12px 14px 14px; margin: 4px 10px 8px;
-      background: var(--bg);
-      border: 1px solid var(--border-soft);
-      border-radius: var(--radius);
-    }
-    #settings-panel.open { display: flex; }
+    /* Settings tab panel */
+    #tab-settings { flex: 1; display: none; overflow-y: auto; padding: 32px; max-width: 600px; margin: 0 auto; width: 100%; }
     .setting-row label {
       display: block; font-size: 10px; font-family: var(--font-mono);
       letter-spacing: 0.08em; color: var(--text-muted);
@@ -1332,7 +1325,7 @@
       No API key configured — responses will use demo mode
     </div>
     <div style="display:flex;align-items:center;gap:4px;">
-      <button id="api-banner-setup" onclick="openSettings()">Set up</button>
+      <button id="api-banner-setup" onclick="switchTab('settings')">Set up</button>
       <button id="api-banner-close" onclick="dismissBanner()" title="Dismiss">×</button>
     </div>
   </div>
@@ -1373,6 +1366,12 @@
               <i class="ti ti-terminal-2"></i>
               Code
               <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘3</span>
+            </div>
+            <div class="nav-item" id="tab-settings-btn" onclick="switchTab('settings')">
+              <i class="ti ti-adjustments-horizontal"></i>
+              Settings
+              <span class="nav-badge alert" id="settings-badge" style="display:none">!</span>
+              <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘4</span>
             </div>
           </div>
         </div>
@@ -1427,11 +1426,6 @@
             <span class="sb-section-arrow">▾</span>
           </div>
           <div class="sb-section-body">
-            <div class="nav-item" id="settings-nav" onclick="toggleSettings()">
-              <i class="ti ti-adjustments-horizontal"></i>
-              Settings
-              <span class="nav-badge alert" id="settings-badge" style="display:none">!</span>
-            </div>
             <div class="nav-item danger" onclick="clearFeed()">
               <i class="ti ti-trash"></i>
               Clear chat
@@ -1439,69 +1433,6 @@
           </div>
         </div>
 
-        <!-- Settings panel -->
-        <div id="settings-panel">
-          <div class="setting-row">
-            <label>API Key</label>
-            <input type="password" id="api-key-input" placeholder="sk-ant-..." oninput="onApiKeyInput()">
-          </div>
-          <div class="setting-row">
-            <label>Model</label>
-            <input type="text" id="model-input" value="claude-opus-4-8" placeholder="model id">
-          </div>
-
-          <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
-            Integrations
-            <button onclick="refreshIntegrations()" id="int-refresh-btn" style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface);transition:color .15s,background .15s;" onmouseover="this.style.color='var(--text-primary)';this.style.background='var(--surface-raise)'" onmouseout="this.style.color='var(--text-muted)';this.style.background='var(--surface)'">↻ refresh</button>
-          </div>
-
-          <div class="setting-row">
-            <label>Composio API Key</label>
-            <input type="password" id="composio-key-input" placeholder="composio_..." oninput="saveComposioKey()">
-          </div>
-
-          <div id="integrations-list">
-            <!-- Notion -->
-            <div class="integration-row">
-              <div class="integration-icon">📄</div>
-              <div class="integration-info">
-                <div class="integration-name">Notion</div>
-                <div class="integration-status" id="int-status-notion">not connected</div>
-              </div>
-              <button class="int-connect-btn" id="int-btn-notion" onclick="connectIntegration('notion')">Connect</button>
-            </div>
-
-            <!-- Todoist -->
-            <div class="integration-row">
-              <div class="integration-icon">✅</div>
-              <div class="integration-info">
-                <div class="integration-name">Todoist</div>
-                <div class="integration-status" id="int-status-todoist">not connected</div>
-              </div>
-              <button class="int-connect-btn" id="int-btn-todoist" onclick="connectIntegration('todoist')">Connect</button>
-            </div>
-
-            <!-- Google Calendar -->
-            <div class="integration-row">
-              <div class="integration-icon">📅</div>
-              <div class="integration-info">
-                <div class="integration-name">Google Calendar</div>
-                <div class="integration-status" id="int-status-google-calendar">not connected</div>
-              </div>
-              <button class="int-connect-btn" id="int-btn-google-calendar" onclick="connectIntegration('google-calendar')">Connect</button>
-            </div>
-
-            <!-- GitHub -->
-            <div class="integration-row">
-              <div class="integration-icon">🐙</div>
-              <div class="integration-info">
-                <div class="integration-name">GitHub</div>
-                <div class="integration-status" id="int-status-github">not connected</div>
-              </div>
-              <button class="int-connect-btn" id="int-btn-github" onclick="connectIntegration('github')">Connect</button>
-            </div>
-          </div>
-        </div>
 
       </div><!-- .sidebar-scroll -->
 
@@ -1639,6 +1570,61 @@
           <div id="context-title">System Prompt / Context</div>
           <textarea id="system-prompt-area" placeholder="Add a system prompt or context that KAI should follow in this session..."></textarea>
           <div id="context-meta">This context is sent with every message in the session.</div>
+        </div>
+      </div>
+
+      <!-- Settings tab -->
+      <div id="tab-settings">
+        <h2 style="font-size:20px;font-weight:400;margin-bottom:24px;color:var(--text-primary)">Settings</h2>
+        <div class="setting-row" style="margin-bottom:16px;">
+          <label>API Key</label>
+          <input type="password" id="api-key-input" placeholder="sk-ant-..." oninput="onApiKeyInput()">
+        </div>
+        <div class="setting-row" style="margin-bottom:16px;">
+          <label>Composio API Key</label>
+          <input type="password" id="composio-key-input" placeholder="composio_..." oninput="saveComposioKey()">
+        </div>
+        <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          Integrations
+          <button onclick="refreshIntegrations()" id="int-refresh-btn" style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface);transition:color .15s,background .15s;" onmouseover="this.style.color='var(--text-primary)';this.style.background='var(--surface-raise)'" onmouseout="this.style.color='var(--text-muted)';this.style.background='var(--surface)'">↻ refresh</button>
+        </div>
+        <div id="integrations-list">
+          <!-- Notion -->
+          <div class="integration-row">
+            <div class="integration-icon">📄</div>
+            <div class="integration-info">
+              <div class="integration-name">Notion</div>
+              <div class="integration-status" id="int-status-notion">not connected</div>
+            </div>
+            <button class="int-connect-btn" id="int-btn-notion" onclick="connectIntegration('notion')">Connect</button>
+          </div>
+          <!-- Todoist -->
+          <div class="integration-row">
+            <div class="integration-icon">✅</div>
+            <div class="integration-info">
+              <div class="integration-name">Todoist</div>
+              <div class="integration-status" id="int-status-todoist">not connected</div>
+            </div>
+            <button class="int-connect-btn" id="int-btn-todoist" onclick="connectIntegration('todoist')">Connect</button>
+          </div>
+          <!-- Google Calendar -->
+          <div class="integration-row">
+            <div class="integration-icon">📅</div>
+            <div class="integration-info">
+              <div class="integration-name">Google Calendar</div>
+              <div class="integration-status" id="int-status-google-calendar">not connected</div>
+            </div>
+            <button class="int-connect-btn" id="int-btn-google-calendar" onclick="connectIntegration('google-calendar')">Connect</button>
+          </div>
+          <!-- GitHub -->
+          <div class="integration-row">
+            <div class="integration-icon">🐙</div>
+            <div class="integration-info">
+              <div class="integration-name">GitHub</div>
+              <div class="integration-status" id="int-status-github">not connected</div>
+            </div>
+            <button class="int-connect-btn" id="int-btn-github" onclick="connectIntegration('github')">Connect</button>
+          </div>
         </div>
       </div>
 
@@ -1803,19 +1789,8 @@
     document.getElementById(id).classList.toggle('collapsed');
   }
 
-  function toggleSettings() {
-    const panel = document.getElementById('settings-panel');
-    panel.classList.toggle('open');
-    if (panel.classList.contains('open')) refreshIntegrations();
-  }
-
-  function openSettings() {
-    const sec = document.getElementById('sec-system');
-    sec.classList.remove('collapsed');
-    document.getElementById('settings-panel').classList.add('open');
-    document.getElementById('settings-nav').scrollIntoView({ behavior: 'smooth' });
-    refreshIntegrations();
-  }
+  function toggleSettings() { switchTab('settings'); }
+  function openSettings()   { switchTab('settings'); }
 
   // ── Integrations (Composio) ──────────────────────────────────
   const INTEGRATIONS = ['notion', 'todoist', 'google-calendar', 'github'];
@@ -1981,14 +1956,15 @@
 
   // ── Tabs ─────────────────────────────────────────────────────
   function switchTab(tab) {
-    ['chat','context','code'].forEach(t => {
+    ['chat','context','code','settings'].forEach(t => {
       const btn   = document.getElementById(`tab-${t}-btn`);
       const panel = document.getElementById(`tab-${t}`);
       if (!btn || !panel) return;
       const active = t === tab;
       btn.classList.toggle('active', active);
-      panel.style.display = active ? (t === 'code' ? 'block' : 'flex') : 'none';
+      panel.style.display = active ? (t === 'code' || t === 'settings' ? 'block' : 'flex') : 'none';
     });
+    if (tab === 'settings') refreshIntegrations();
     // Close sidebar on mobile after switching
     if (window.innerWidth <= 640) toggleSidebar();
   }
@@ -2479,6 +2455,7 @@
     if ((e.metaKey || e.ctrlKey) && e.key === '1') { e.preventDefault(); switchTab('chat'); }
     if ((e.metaKey || e.ctrlKey) && e.key === '2') { e.preventDefault(); switchTab('context'); }
     if ((e.metaKey || e.ctrlKey) && e.key === '3') { e.preventDefault(); switchTab('code'); }
+    if ((e.metaKey || e.ctrlKey) && e.key === '4') { e.preventDefault(); switchTab('settings'); }
   });
 
   // ── Send ─────────────────────────────────────────────────────
@@ -2568,9 +2545,8 @@
     abortController = new AbortController();
 
     try {
-      const savedModel      = (() => { try { return localStorage.getItem('kai_model') || ''; } catch { return ''; } })();
       const composioKey     = (() => { try { return localStorage.getItem('kai_composio_key') || ''; } catch { return ''; } })();
-      const payload = { message: userText, sessionId: 'main', systemPrompt, ...(savedModel && { model: savedModel }), ...(composioKey && { composioKey }) };
+      const payload = { message: userText, sessionId: 'main', systemPrompt, ...(composioKey && { composioKey }) };
       if (file) payload.file = { name: file.name, mimeType: file.mimeType, dataUrl: file.dataUrl };
 
       const res = await fetch(`${BACKEND}/chat`, {
