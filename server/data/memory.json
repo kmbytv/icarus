@@ -42,7 +42,9 @@
     "The deployment issue might be due to vitest being in the root package.json instead of server/.",
     "Railway fails at the 'Build image' stage with error 'Failed to build an image'.",
     "The last commit deployed via GitHub is 'memory: add 1 fact(s)' with path '/server'.",
-    "Railway correctly identifies '/server' as the project root directory."
+    "Railway correctly identifies '/server' as the project root directory.",
+    "npm ci failed because package-lock.json was out of sync with package.json.",
+    "The lock file in server/ was not properly updated or was committed in an outdated state."
   ],
-  "updated_at": "2026-06-07T10:09:36.658Z"
+  "updated_at": "2026-06-07T10:13:16.513Z"
 }
