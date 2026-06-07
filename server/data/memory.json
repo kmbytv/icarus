@@ -38,7 +38,8 @@
     "Enabling 'Wait for CI' in Railway settings makes it wait for tests before deploying.",
     "Deployment is skipped if tests fail.",
     "npm ci failed with exit code 1 on Railway.",
-    "The package-lock.json in server/ was not updated after adding vitest."
+    "The package-lock.json in server/ was not updated after adding vitest.",
+    "The deployment issue might be due to vitest being in the root package.json instead of server/."
   ],
-  "updated_at": "2026-06-07T09:58:40.308Z"
+  "updated_at": "2026-06-07T10:08:25.959Z"
 }
