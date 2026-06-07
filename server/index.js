@@ -14,6 +14,9 @@ import './cron.js';
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// ── Default model ────────────────────────────────────────────────
+const DEFAULT_MODEL = process.env.MODEL || 'deepseek/deepseek-v4-flash';
+
 // ── CORS ────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   'https://kmbytv.github.io',
@@ -102,10 +105,9 @@ function saveHistory(sessionId, history) {
 }
 
 // ── Tool call parser ────────────────────────────────────────────
-// Returns { toolName, args } if the line is a tool call, else null
 function parseToolCall(line) {
   const trimmed = line.trim();
-  if (!trimmed.startsWith('{"tool"')) return null;
+  if (!trimmed.startsWith('{"tool')) return null;
   try {
     const obj = JSON.parse(trimmed);
     if (obj.tool && typeof obj.tool === 'string') return { toolName: obj.tool, args: obj.args ?? {} };
@@ -115,7 +117,7 @@ function parseToolCall(line) {
 
 // ── POST /chat ──────────────────────────────────────────────────
 app.post('/chat', async (req, res) => {
-  const { message, sessionId = 'default', systemPrompt, file } = req.body;
+  const { message, sessionId = 'default', systemPrompt, file, model } = req.body;
 
   if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'message is required' });
@@ -136,7 +138,6 @@ app.post('/chat', async (req, res) => {
     console.log('[chat] incoming:', sessionId, JSON.stringify(message).slice(0, 80));
     const history = getHistory(sessionId);
 
-    // Build system prompt: memory context + tools description + optional user-supplied prompt
     const memoryContext = getMemoryContext();
     const sysContent = [
       memoryContext ? `## Контекст из памяти\n${memoryContext}\n` : '',
@@ -144,7 +145,6 @@ app.post('/chat', async (req, res) => {
       systemPrompt?.trim() ? `\nAdditional instructions:\n${systemPrompt.trim()}` : '',
     ].join('');
 
-    // Build user content — plain text or multipart (text + file)
     let userContent;
     let modelOverride = null;
 
@@ -172,7 +172,10 @@ app.post('/chat', async (req, res) => {
       userContent = message.trim();
     }
 
-    // Build message list for this turn
+    // Determine model: frontend request -> env -> hardcoded fallback
+    const activeModel = modelOverride ?? model ?? DEFAULT_MODEL;
+    console.log('[chat] using model:', activeModel);
+
     const messages = [
       { role: 'system', content: sysContent },
       ...history,
@@ -184,11 +187,10 @@ app.post('/chat', async (req, res) => {
     const plan = await runPlanner(message.trim());
     if (plan) send({ type: 'plan', steps: plan.steps });
 
-    // Tool loop — runs until the model stops emitting tool calls
     while (true) {
       console.log('[chat] calling OpenRouter...');
       const stream = await client.chat.completions.create({
-        model: modelOverride ?? 'deepseek/deepseek-v4-flash',
+        model: activeModel,
         stream: true,
         messages,
         tools: [
@@ -280,20 +282,18 @@ app.post('/chat', async (req, res) => {
       });
 
       let turnText     = '';
-      let nativeTools  = []; // accumulate native tool_calls across chunks
+      let nativeTools  = [];
 
       for await (const chunk of stream) {
         const choice = chunk.choices[0];
         if (!choice) continue;
 
-        // Accumulate text content
         const textDelta = choice.delta?.content ?? '';
         if (textDelta) {
           turnText += textDelta;
           send({ type: 'delta', text: textDelta });
         }
 
-        // Accumulate native tool_calls deltas
         for (const tc of choice.delta?.tool_calls ?? []) {
           const idx = tc.index ?? 0;
           if (!nativeTools[idx]) nativeTools[idx] = { id: '', name: '', argsBuf: '' };
@@ -306,7 +306,6 @@ app.post('/chat', async (req, res) => {
       console.log('[chat] stream done, text len:', turnText.length, 'native tools:', nativeTools.length);
       fullAssistantText += turnText;
 
-      // ── Resolve tool call: native takes priority, fall back to text ──
       let toolCall = null;
 
       if (nativeTools.length > 0) {
@@ -325,9 +324,8 @@ app.post('/chat', async (req, res) => {
         toolCall = turnText.split('\n').map(parseToolCall).find(Boolean) ?? null;
       }
 
-      if (!toolCall) break; // no tool call → done
+      if (!toolCall) break;
 
-      // Execute tool, feed result back as a new user message, loop
       let result;
       try {
         switch (toolCall.toolName) {
@@ -347,9 +345,7 @@ app.post('/chat', async (req, res) => {
 
       send({ type: 'tool_result', tool: toolCall.toolName, result });
 
-      // Append assistant turn + tool result to messages for next loop
       if (nativeTools.length > 0) {
-        // Native function calling format
         const tc = nativeTools[0];
         messages.push({
           role: 'assistant',
@@ -358,23 +354,19 @@ app.post('/chat', async (req, res) => {
         });
         messages.push({ role: 'tool', tool_call_id: tc.id || 'call_0', content: JSON.stringify(result) });
       } else {
-        // Text-based tool calling format
         messages.push({ role: 'assistant', content: turnText });
         messages.push({ role: 'user',      content: resultLine });
       }
       fullAssistantText += '\n' + resultLine;
 
-      // Safety: max 6 tool rounds to prevent infinite loops
       const toolRounds = messages.filter(m => m.role === 'user' && m.content.startsWith('{"tool_result"')).length;
       if (toolRounds >= 6) break;
     }
 
-    // Persist the full conversation turn to history
     history.push({ role: 'user',      content: message.trim() });
     history.push({ role: 'assistant', content: fullAssistantText });
     saveHistory(sessionId, history);
 
-    // Persist to long-term SQLite memory
     saveMessage(sessionId, 'user',      message.trim());
     saveMessage(sessionId, 'assistant', fullAssistantText);
 
