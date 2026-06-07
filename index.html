@@ -1829,11 +1829,15 @@
   }
 
   function pollIntegrationStatus(name, key, attempts = 0) {
-    if (attempts > 20) {
-      const btn = document.getElementById(`int-btn-${name}`);
+    const btn = document.getElementById(`int-btn-${name}`);
+    const MAX = 40; // 40 × 3s = 2 min
+    if (attempts > MAX) {
       if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
       return;
     }
+    // Show countdown in button
+    if (btn) btn.textContent = `Waiting… (${MAX - attempts})`;
+
     setTimeout(async () => {
       try {
         const res = await fetch(`${BACKEND}/composio/status?app=${name}`, {
@@ -1842,8 +1846,9 @@
         const data = await res.json();
         if (data.connected) {
           setIntStatus(name, true);
-          const btn = document.getElementById(`int-btn-${name}`);
           if (btn) { btn.textContent = 'Connected'; btn.classList.add('connected'); btn.disabled = false; }
+          // Persist connected state
+          try { localStorage.setItem(`kai_int_connected_${name}`, '1'); } catch(e) {}
         } else {
           pollIntegrationStatus(name, key, attempts + 1);
         }
@@ -1858,11 +1863,14 @@
       });
       const data = await res.json();
       for (const name of INTEGRATIONS) {
-        setIntStatus(name, !!data[name]);
+        const connected = !!data[name];
+        setIntStatus(name, connected);
+        try { localStorage.setItem(`kai_int_connected_${name}`, connected ? '1' : ''); } catch(e) {}
         const btn = document.getElementById(`int-btn-${name}`);
         if (btn) {
-          btn.textContent = data[name] ? 'Connected' : 'Connect';
-          btn.classList.toggle('connected', !!data[name]);
+          btn.textContent = connected ? 'Connected' : 'Connect';
+          btn.classList.toggle('connected', connected);
+          btn.disabled = false;
         }
       }
     } catch(e) {}
@@ -1878,7 +1886,19 @@
   function initIntegrations() {
     const key = (() => { try { return localStorage.getItem('kai_composio_key') || ''; } catch(e) { return ''; } })();
     const input = document.getElementById('composio-key-input');
-    if (input && key) { input.value = key; fetchIntegrationStatuses(key); }
+    if (input && key) {
+      input.value = key;
+      // Restore locally cached connected state immediately, then verify with server
+      for (const name of INTEGRATIONS) {
+        const cached = (() => { try { return localStorage.getItem(`kai_int_connected_${name}`) === '1'; } catch(e) { return false; } })();
+        if (cached) {
+          setIntStatus(name, true);
+          const btn = document.getElementById(`int-btn-${name}`);
+          if (btn) { btn.textContent = 'Connected'; btn.classList.add('connected'); }
+        }
+      }
+      fetchIntegrationStatuses(key);
+    }
   }
 
   // ── API Banner ──────────────────────────────────────────────
