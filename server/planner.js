@@ -16,7 +16,7 @@ const CODING_KEYWORDS = [
 export async function runPlanner(message) {
   try {
     const words = message.trim().split(/\s+/);
-    if (words.length <= 5) return null;
+    if (words.length <= 3) return null;
 
     const lower = message.toLowerCase();
     const hasActionVerb = ACTION_VERBS.some(v => lower.includes(v));
