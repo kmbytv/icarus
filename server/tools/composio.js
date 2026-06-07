@@ -19,18 +19,38 @@ const TOOLKIT_MAP = {
   'github':          'github',
 };
 
-// Initiate OAuth — creates auth config automatically if missing
+// Get existing auth config id, or create Composio-managed one
+async function getOrCreateAuthConfigId(composio, toolkit) {
+  // Try to find existing
+  const existing = await composio.authConfigs.list({ toolkit });
+  if (existing.items?.length > 0) return existing.items[0].id;
+
+  // Create Composio-managed auth config
+  const toolkitInfo = await composio.toolkits.getToolkitBySlug(toolkit);
+  const created = await composio.authConfigs.create(toolkit, {
+    type: 'use_composio_managed_auth',
+    name: `${toolkitInfo?.name ?? toolkit} (KAI)`,
+  });
+  return created.id;
+}
+
+// Initiate OAuth via /link endpoint (not deprecated initiate)
 export async function initiateConnection(app, composioKey) {
   const toolkit = TOOLKIT_MAP[app];
   if (!toolkit) throw new Error(`Unknown app: ${app}`);
 
   const composio = getClient(composioKey);
-  // toolkits.authorize creates auth config if needed, then initiates connection
-  const connection = await composio.toolkits.authorize('default', toolkit);
+  const authConfigId = await getOrCreateAuthConfigId(composio, toolkit);
+
+  // link() uses POST /api/v3/connected_accounts/link — the correct new endpoint
+  const connection = await composio.connectedAccounts.link('default', authConfigId, {
+    allowMultiple: true,
+  });
+
   return { redirectUrl: connection.redirectUrl, connectionId: connection.connectedAccountId };
 }
 
-// Check status for one app or all
+// Check connection status
 export async function getConnectionStatus(composioKey, app = null) {
   const composio = getClient(composioKey);
   try {
@@ -42,8 +62,7 @@ export async function getConnectionStatus(composioKey, app = null) {
     );
 
     if (app) {
-      const toolkit = TOOLKIT_MAP[app];
-      return { connected: connectedToolkits.has(toolkit?.toLowerCase()) };
+      return { connected: connectedToolkits.has(TOOLKIT_MAP[app]?.toLowerCase()) };
     }
 
     const result = {};
@@ -57,7 +76,7 @@ export async function getConnectionStatus(composioKey, app = null) {
   }
 }
 
-// Get tools for connected apps in OpenAI function format
+// Get tools for connected apps in OpenAI format
 export async function getComposioTools(composioKey) {
   try {
     const composio = getClient(composioKey);
@@ -80,7 +99,7 @@ export async function getComposioTools(composioKey) {
   }
 }
 
-// Execute a Composio tool by its slug (e.g. NOTION_CREATE_PAGE)
+// Execute a Composio tool
 export async function executeComposioAction(toolSlug, args, composioKey) {
   try {
     const composio = getClient(composioKey);
@@ -95,7 +114,7 @@ export async function executeComposioAction(toolSlug, args, composioKey) {
   }
 }
 
-// Composio tool slugs are UPPERCASE_WITH_UNDERSCORES
+// Composio tool slugs are UPPERCASE_WITH_UNDERSCORES like NOTION_CREATE_PAGE
 export function isComposioTool(name) {
   return typeof name === 'string' && /^[A-Z][A-Z0-9_]+$/.test(name) && name.includes('_');
 }
