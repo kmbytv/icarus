@@ -47,7 +47,9 @@
     "The lock file in server/ was not properly updated or was committed in an outdated state.",
     "Claude Sonnet in code-agent.js costs $0.50 per request.",
     "The deepseek model in index.js is much cheaper at $0.15/$0.60 per 1M tokens.",
-    "Пользователь упомянул модель DeepSeek V4 Pro."
+    "Пользователь упомянул модель DeepSeek V4 Pro.",
+    "DeepSeek V4 Pro costs $2/$8 per 1M tokens.",
+    "The Coder role uses DeepSeek V4 Pro, which is 10+ times more expensive than Gemini 2.5 Flash."
   ],
-  "updated_at": "2026-06-07T10:23:39.062Z"
+  "updated_at": "2026-06-07T10:25:09.797Z"
 }
