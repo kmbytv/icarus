@@ -13,6 +13,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@composio/core": "^0.10.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^21.0.2",
     "cors": "^2.8.5",

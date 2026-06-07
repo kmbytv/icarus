@@ -1,92 +1,111 @@
-const BASE = 'https://backend.composio.dev/api/v2';
+import { Composio } from '@composio/core';
 
-const APP_SLUGS = {
-  'notion':          'NOTION',
-  'todoist':         'TODOIST',
-  'google-calendar': 'GOOGLECALENDAR',
-  'github':          'GITHUB',
+let _composio = null;
+let _currentKey = null;
+
+function getClient(apiKey) {
+  if (!apiKey) throw new Error('Composio API key not provided');
+  if (_currentKey !== apiKey) {
+    _composio = new Composio({ apiKey });
+    _currentKey = apiKey;
+  }
+  return _composio;
+}
+
+const TOOLKIT_MAP = {
+  'notion':          'notion',
+  'todoist':         'todoist',
+  'google-calendar': 'googlecalendar',
+  'github':          'github',
 };
 
-function headers(key) {
-  return { 'x-api-key': key, 'Content-Type': 'application/json' };
+// Get authConfigId for a toolkit (uses default Composio-managed config)
+async function getAuthConfigId(composio, toolkit) {
+  const configs = await composio.authConfigs.list({ toolkit });
+  const config = configs.items?.[0];
+  if (!config) throw new Error(`No auth config found for ${toolkit}`);
+  return config.id;
 }
 
-// Get OAuth redirect URL for an app
+// Initiate OAuth — returns { redirectUrl }
 export async function initiateConnection(app, composioKey) {
-  const appSlug = APP_SLUGS[app];
-  if (!appSlug) throw new Error(`Unknown app: ${app}`);
+  const toolkit = TOOLKIT_MAP[app];
+  if (!toolkit) throw new Error(`Unknown app: ${app}`);
 
-  const res = await fetch(`${BASE}/connectedAccounts`, {
-    method: 'POST',
-    headers: headers(composioKey),
-    body: JSON.stringify({ appName: appSlug, authMode: 'OAUTH2' }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Composio error');
-  return { redirectUrl: data.redirectUrl, connectionId: data.connectionId };
+  const composio = getClient(composioKey);
+  const authConfigId = await getAuthConfigId(composio, toolkit);
+  const connection = await composio.connectedAccounts.link('default', authConfigId);
+
+  return { redirectUrl: connection.redirectUrl, connectionId: connection.connectedAccountId };
 }
 
-// Check connection status for one or all apps
+// Check status for one app or all
 export async function getConnectionStatus(composioKey, app = null) {
-  const url = app
-    ? `${BASE}/connectedAccounts?appName=${APP_SLUGS[app]}&showActiveOnly=true`
-    : `${BASE}/connectedAccounts?showActiveOnly=true`;
+  const composio = getClient(composioKey);
 
-  const res = await fetch(url, { headers: headers(composioKey) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Composio error');
+  try {
+    const accounts = await composio.connectedAccounts.list({ userIds: ['default'] });
+    const connectedToolkits = new Set(
+      (accounts.items ?? [])
+        .filter(a => a.status === 'ACTIVE')
+        .map(a => a.toolkit?.toLowerCase())
+    );
 
-  if (app) {
-    return { connected: (data.items?.length ?? 0) > 0 };
+    if (app) {
+      const toolkit = TOOLKIT_MAP[app];
+      return { connected: connectedToolkits.has(toolkit?.toLowerCase()) };
+    }
+
+    const result = {};
+    for (const [name, slug] of Object.entries(TOOLKIT_MAP)) {
+      result[name] = connectedToolkits.has(slug.toLowerCase());
+    }
+    return result;
+  } catch {
+    if (app) return { connected: false };
+    return Object.fromEntries(Object.keys(TOOLKIT_MAP).map(k => [k, false]));
   }
-
-  // Return map { notion: true, todoist: false, ... }
-  const connected = new Set((data.items ?? []).map(i => i.appName));
-  const result = {};
-  for (const [name, slug] of Object.entries(APP_SLUGS)) {
-    result[name] = connected.has(slug);
-  }
-  return result;
 }
 
-// Get all available tools for connected apps as OpenAI function definitions
+// Get tools for connected apps in OpenAI function format
 export async function getComposioTools(composioKey) {
-  const status = await getConnectionStatus(composioKey);
-  const connectedApps = Object.entries(status)
-    .filter(([, v]) => v)
-    .map(([name]) => APP_SLUGS[name]);
+  try {
+    const composio = getClient(composioKey);
+    const status = await getConnectionStatus(composioKey);
+    const connectedToolkits = Object.entries(status)
+      .filter(([, v]) => v)
+      .map(([name]) => TOOLKIT_MAP[name]);
 
-  if (connectedApps.length === 0) return [];
+    if (connectedToolkits.length === 0) return [];
 
-  const res = await fetch(
-    `${BASE}/actions?apps=${connectedApps.join(',')}&limit=50`,
-    { headers: headers(composioKey) }
-  );
-  const data = await res.json();
-  if (!res.ok) return [];
+    const tools = await composio.tools.get('default', {
+      toolkits: connectedToolkits,
+      limit: 30,
+    });
 
-  return (data.items ?? []).map(action => ({
-    type: 'function',
-    function: {
-      name: `composio__${action.name}`,
-      description: action.description ?? action.name,
-      parameters: action.parameters ?? { type: 'object', properties: {} },
-    },
-  }));
+    return Array.isArray(tools) ? tools : [];
+  } catch (err) {
+    console.error('[composio] getComposioTools error:', err.message);
+    return [];
+  }
 }
 
-// Execute a Composio action
-export async function executeComposioAction(actionName, args, composioKey) {
-  const res = await fetch(`${BASE}/actions/${actionName}/execute`, {
-    method: 'POST',
-    headers: headers(composioKey),
-    body: JSON.stringify({ input: args }),
-  });
-  const data = await res.json();
-  if (!res.ok) return { error: data.message || 'Execution failed' };
-  return data.response ?? data;
+// Execute a Composio tool by its slug (e.g. NOTION_CREATE_PAGE)
+export async function executeComposioAction(toolSlug, args, composioKey) {
+  try {
+    const composio = getClient(composioKey);
+    const result = await composio.tools.execute(toolSlug, {
+      userId: 'default',
+      arguments: args,
+      dangerouslySkipVersionCheck: true,
+    });
+    return result.data ?? result;
+  } catch (err) {
+    return { error: err.message };
+  }
 }
 
+// Composio tools have uppercase slugs like NOTION_CREATE_PAGE
 export function isComposioTool(name) {
-  return name.startsWith('composio__');
+  return typeof name === 'string' && /^[A-Z][A-Z0-9_]+$/.test(name) && name.includes('_');
 }
