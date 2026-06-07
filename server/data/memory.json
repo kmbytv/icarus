@@ -62,7 +62,9 @@
     "Цель KAI — заменить Claude Chat для учёбы с помощью RAG и методик Гарварда/Стэнфорда.",
     "План учёбы — 3 сессии в день по часу.",
     "DeepSeek V4 Pro израсходовал $0.50 на одной задаче, что стало причиной перехода на Flash.",
-    "A one-hour tutoring session with DeepSeek Flash costs $0.00216."
+    "A one-hour tutoring session with DeepSeek Flash costs $0.00216.",
+    "User asked to develop an RAG system and select the best models for price, quality, and results tomorrow.",
+    "Assistant offered to provide an overview of the best RAG models now to start ahead."
   ],
-  "updated_at": "2026-06-07T11:10:11.657Z"
+  "updated_at": "2026-06-07T11:31:39.818Z"
 }
