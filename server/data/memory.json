@@ -66,7 +66,9 @@
     "User asked to develop an RAG system and select the best models for price, quality, and results tomorrow.",
     "Assistant offered to provide an overview of the best RAG models now to start ahead.",
     "OpenAI text-embedding-3-small costs $0.02 per 1M tokens.",
-    "OpenAI text-embedding-3-large costs $0.13 per 1M tokens."
+    "OpenAI text-embedding-3-large costs $0.13 per 1M tokens.",
+    "OpenAI text-embedding-3-small costs $0.02 per million tokens.",
+    "BGE-M3 can be run locally for free with 1024 dimension."
   ],
-  "updated_at": "2026-06-07T11:32:00.441Z"
+  "updated_at": "2026-06-07T11:34:05.106Z"
 }
