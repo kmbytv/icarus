@@ -19,30 +19,20 @@ const TOOLKIT_MAP = {
   'github':          'github',
 };
 
-// Get authConfigId for a toolkit (uses default Composio-managed config)
-async function getAuthConfigId(composio, toolkit) {
-  const configs = await composio.authConfigs.list({ toolkit });
-  const config = configs.items?.[0];
-  if (!config) throw new Error(`No auth config found for ${toolkit}`);
-  return config.id;
-}
-
-// Initiate OAuth — returns { redirectUrl }
+// Initiate OAuth — creates auth config automatically if missing
 export async function initiateConnection(app, composioKey) {
   const toolkit = TOOLKIT_MAP[app];
   if (!toolkit) throw new Error(`Unknown app: ${app}`);
 
   const composio = getClient(composioKey);
-  const authConfigId = await getAuthConfigId(composio, toolkit);
-  const connection = await composio.connectedAccounts.link('default', authConfigId);
-
+  // toolkits.authorize creates auth config if needed, then initiates connection
+  const connection = await composio.toolkits.authorize('default', toolkit);
   return { redirectUrl: connection.redirectUrl, connectionId: connection.connectedAccountId };
 }
 
 // Check status for one app or all
 export async function getConnectionStatus(composioKey, app = null) {
   const composio = getClient(composioKey);
-
   try {
     const accounts = await composio.connectedAccounts.list({ userIds: ['default'] });
     const connectedToolkits = new Set(
@@ -105,7 +95,7 @@ export async function executeComposioAction(toolSlug, args, composioKey) {
   }
 }
 
-// Composio tools have uppercase slugs like NOTION_CREATE_PAGE
+// Composio tool slugs are UPPERCASE_WITH_UNDERSCORES
 export function isComposioTool(name) {
   return typeof name === 'string' && /^[A-Z][A-Z0-9_]+$/.test(name) && name.includes('_');
 }
