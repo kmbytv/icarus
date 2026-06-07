@@ -16,6 +16,7 @@ import { readJSON, writeJSON } from './storage.js';
 import { initMCP, getMCPTools, callMCPTool, isMCPTool } from './mcp-client.js';
 import { loadMemory, getMemoryPrompt, extractAndSaveFacts } from './tools/persistent-memory.js';
 import { getCodebase } from './tools/codebase.js';
+import { recordRequest, getStats } from './obs.js';
 import './cron.js';
 
 const app  = express();
@@ -152,6 +153,12 @@ app.post('/chat', async (req, res) => {
   const heartbeat = setInterval(ping, 20000);
   res.on('close', () => clearInterval(heartbeat));
 
+  const reqStart  = Date.now();
+  const obsTools  = [];
+  let   obsTokens = { prompt: 0, completion: 0 };
+  let   obsRoute  = 'unknown';
+  let   obsModel  = model ?? DEFAULT_MODEL;
+
   try {
     console.log('[chat] incoming:', sessionId, JSON.stringify(message).slice(0, 80));
     const history = getHistory(sessionId);
@@ -239,6 +246,8 @@ app.post('/chat', async (req, res) => {
 
     let fullAssistantText = '';
     let toolRoundCount = 0;
+    obsRoute = route;
+    obsModel = finalModel;
 
     if (route !== 'chat') {
       const plan = await runPlanner(message.trim());
@@ -248,8 +257,9 @@ app.post('/chat', async (req, res) => {
     while (true) {
       console.log('[chat] calling OpenRouter...');
       const streamParams = {
-        model: finalModel,
-        stream: true,
+        model:          finalModel,
+        stream:         true,
+        stream_options: { include_usage: true },
         messages,
       };
       if (useThinking) streamParams.reasoning = { enabled: true };
@@ -381,7 +391,14 @@ app.post('/chat', async (req, res) => {
       let nativeTools  = [];
 
       for await (const chunk of stream) {
-        const choice = chunk.choices[0];
+        if (chunk.usage) {
+          obsTokens = {
+            prompt:     chunk.usage.prompt_tokens     ?? obsTokens.prompt,
+            completion: chunk.usage.completion_tokens ?? obsTokens.completion,
+          };
+        }
+
+        const choice = chunk.choices?.[0];
         if (!choice) continue;
 
         const textDelta = choice.delta?.content ?? '';
@@ -423,6 +440,8 @@ app.post('/chat', async (req, res) => {
       if (!toolCall) break;
 
       let result;
+      const toolStart = Date.now();
+      let   toolOk    = true;
       try {
         switch (toolCall.toolName) {
           case 'web_search':        result = await webSearch(toolCall.args.query, { numResults: toolCall.args.numResults }); break;
@@ -448,7 +467,9 @@ app.post('/chat', async (req, res) => {
       } catch (toolErr) {
         console.error('[tool dispatch error]', toolCall.toolName, toolErr?.message ?? toolErr);
         result = { error: toolErr?.message ?? 'Tool execution failed' };
+        toolOk = false;
       }
+      obsTools.push({ name: toolCall.toolName, ok: toolOk, durationMs: Date.now() - toolStart });
       const resultLine = JSON.stringify({ tool_result: result });
 
       send({ type: 'tool_result', tool: toolCall.toolName, result });
@@ -489,10 +510,13 @@ app.post('/chat', async (req, res) => {
     extractAndSaveFacts(sessionId, message.trim(), textOnlyAssistant, process.env.OPENROUTER_API_KEY)
       .catch(e => console.error('[memory] background save failed:', e.message));
 
+    recordRequest({ sessionId, route: obsRoute, model: obsModel, durationMs: Date.now() - reqStart, tokens: obsTokens, tools: obsTools });
+
     send({ type: 'done' });
     res.end();
   } catch (err) {
     console.error('[/chat error]', err?.message ?? err);
+    recordRequest({ sessionId, route: obsRoute, model: obsModel, durationMs: Date.now() - reqStart, tokens: obsTokens, tools: obsTools, error: err?.message ?? 'Unknown error' });
     send({ type: 'error', message: err?.message ?? 'Unknown error' });
     res.end();
   } finally {
@@ -519,6 +543,12 @@ app.post('/code', async (req, res) => {
     clearInterval(hb);
     res.end();
   }
+});
+
+// ── GET /stats — observability data ────────────────────────────
+app.get('/stats', (req, res) => {
+  const days = parseInt(req.query.days) || 7;
+  res.json(getStats(days));
 });
 
 // ── GET /session/:id — fetch UI-friendly history ────────────────

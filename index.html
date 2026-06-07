@@ -1395,6 +1395,11 @@
               <span class="nav-badge alert" id="settings-badge" style="display:none">!</span>
               <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘4</span>
             </div>
+            <div class="nav-item" id="tab-stats-btn" onclick="switchTab('stats')">
+              <i class="ti ti-chart-bar"></i>
+              Stats
+              <span class="nav-badge" style="margin-left:auto;opacity:0.4">⌘5</span>
+            </div>
           </div>
         </div>
 
@@ -1652,6 +1657,22 @@
 
     </div>
   </div>
+
+  <div id="tab-stats" style="display:none;padding:24px 28px;overflow-y:auto;flex:1;flex-direction:column;gap:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h2 style="font-size:20px;font-weight:400;color:var(--text-primary);margin:0">Observability</h2>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="stats-days" onchange="loadStats()" style="font-size:12px;font-family:var(--font-mono);padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-primary);">
+          <option value="1">Today</option>
+          <option value="7" selected>7 days</option>
+          <option value="30">30 days</option>
+        </select>
+        <button onclick="loadStats()" style="font-size:12px;font-family:var(--font-mono);color:var(--text-muted);padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;">↻ refresh</button>
+      </div>
+    </div>
+    <div id="stats-body" style="display:flex;flex-direction:column;gap:16px;"></div>
+  </div>
+
 </div>
 
 <script>
@@ -1983,15 +2004,16 @@
 
   // ── Tabs ─────────────────────────────────────────────────────
   function switchTab(tab) {
-    ['chat','context','code','settings'].forEach(t => {
+    ['chat','context','code','settings','stats'].forEach(t => {
       const btn   = document.getElementById(`tab-${t}-btn`);
       const panel = document.getElementById(`tab-${t}`);
       if (!btn || !panel) return;
       const active = t === tab;
       btn.classList.toggle('active', active);
-      panel.style.display = active ? (t === 'code' || t === 'settings' ? 'block' : 'flex') : 'none';
+      panel.style.display = active ? (t === 'code' || t === 'settings' || t === 'stats' ? 'block' : 'flex') : 'none';
     });
     if (tab === 'settings') refreshIntegrations();
+    if (tab === 'stats')    loadStats();
     // Close sidebar on mobile after switching
     if (window.innerWidth <= 640) toggleSidebar();
   }
@@ -2484,6 +2506,7 @@
     if ((e.metaKey || e.ctrlKey) && e.key === '2') { e.preventDefault(); switchTab('context'); }
     if ((e.metaKey || e.ctrlKey) && e.key === '3') { e.preventDefault(); switchTab('code'); }
     if ((e.metaKey || e.ctrlKey) && e.key === '4') { e.preventDefault(); switchTab('settings'); }
+    if ((e.metaKey || e.ctrlKey) && e.key === '5') { e.preventDefault(); switchTab('stats'); }
   });
 
   // ── Send ─────────────────────────────────────────────────────
@@ -2689,6 +2712,94 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ── Stats tab ─────────────────────────────────────────────────
+  async function loadStats() {
+    const days = document.getElementById('stats-days')?.value ?? 7;
+    const body = document.getElementById('stats-body');
+    if (!body) return;
+    body.innerHTML = `<div style="color:var(--text-muted);font-size:13px">Loading…</div>`;
+    try {
+      const res  = await fetch(`${BACKEND}/stats?days=${days}`);
+      const data = await res.json();
+      if (data.empty) {
+        body.innerHTML = `<div style="color:var(--text-muted);font-size:13px">No data yet — start chatting!</div>`;
+        return;
+      }
+      const fmtNum = n => n?.toLocaleString() ?? '0';
+      const fmtMs  = ms => ms >= 1000 ? `${(ms/1000).toFixed(1)}s` : `${ms}ms`;
+
+      const topTools = data.tools.slice(0, 8).map(t =>
+        `<tr>
+          <td style="padding:5px 10px 5px 0;color:var(--text-primary);font-family:var(--font-mono);font-size:12px">${t.name}</td>
+          <td style="padding:5px 10px;text-align:right;color:var(--text-secondary);font-size:12px">${t.calls}</td>
+          <td style="padding:5px 10px;text-align:right;font-size:12px;color:${t.errorRate > 20 ? '#e85' : t.errorRate > 5 ? '#ca8' : 'var(--text-muted)'}">${t.errorRate}%</td>
+          <td style="padding:5px 0;text-align:right;color:var(--text-muted);font-size:12px">${fmtMs(t.avgMs)}</td>
+        </tr>`
+      ).join('');
+
+      const dailyBars = data.daily.slice(-14).map(d => {
+        const maxTok = Math.max(...data.daily.map(x => x.tokens), 1);
+        const h = Math.max(4, Math.round((d.tokens / maxTok) * 60));
+        return `<div title="${d.day}: ${fmtNum(d.tokens)} tokens, ${d.requests} req" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:default;">
+          <div style="width:16px;height:${h}px;background:var(--accent);border-radius:3px 3px 0 0;opacity:0.8"></div>
+          <span style="font-size:9px;color:var(--text-muted);writing-mode:vertical-rl;transform:rotate(180deg)">${d.day.slice(5)}</span>
+        </div>`;
+      }).join('');
+
+      const routeRows = Object.entries(data.routes).sort((a,b) => b[1]-a[1]).map(([r,c]) =>
+        `<span style="font-family:var(--font-mono);font-size:12px;padding:2px 8px;border-radius:4px;background:var(--surface-raise);color:var(--text-secondary)">${r} <strong style="color:var(--text-primary)">${c}</strong></span>`
+      ).join('');
+
+      body.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+          ${[
+            ['Requests', fmtNum(data.requests)],
+            ['Tokens', fmtNum(data.tokens.total)],
+            ['Error rate', data.errorRate + '%'],
+            ['p95 latency', fmtMs(data.latency.p95)],
+          ].map(([label, val]) => `
+            <div style="background:var(--surface-raise);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">${label}</div>
+              <div style="font-size:22px;font-weight:500;color:var(--text-primary);font-family:var(--font-mono)">${val}</div>
+            </div>`).join('')}
+        </div>
+
+        <div style="background:var(--surface-raise);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Token breakdown</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">prompt <strong style="color:var(--text-primary)">${fmtNum(data.tokens.prompt)}</strong> &nbsp;·&nbsp; completion <strong style="color:var(--text-primary)">${fmtNum(data.tokens.completion)}</strong></div>
+          <div style="display:flex;align-items:flex-end;gap:4px;height:72px">${dailyBars}</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="background:var(--surface-raise);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">Routes</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">${routeRows || '<span style="color:var(--text-muted);font-size:12px">—</span>'}</div>
+          </div>
+          <div style="background:var(--surface-raise);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Latency</div>
+            <div style="font-size:12px;color:var(--text-secondary)">p50 <strong style="color:var(--text-primary)">${fmtMs(data.latency.p50)}</strong> &nbsp;·&nbsp; p95 <strong style="color:var(--text-primary)">${fmtMs(data.latency.p95)}</strong></div>
+          </div>
+        </div>
+
+        ${data.tools.length ? `
+        <div style="background:var(--surface-raise);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">Tool calls</div>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="border-bottom:1px solid var(--border)">
+              <th style="padding:4px 10px 8px 0;text-align:left;font-size:11px;color:var(--text-muted);font-weight:400">Tool</th>
+              <th style="padding:4px 10px 8px;text-align:right;font-size:11px;color:var(--text-muted);font-weight:400">Calls</th>
+              <th style="padding:4px 10px 8px;text-align:right;font-size:11px;color:var(--text-muted);font-weight:400">Errors</th>
+              <th style="padding:4px 0 8px;text-align:right;font-size:11px;color:var(--text-muted);font-weight:400">Avg</th>
+            </tr></thead>
+            <tbody>${topTools}</tbody>
+          </table>
+        </div>` : ''}
+      `;
+    } catch (e) {
+      body.innerHTML = `<div style="color:#e85;font-size:13px">Failed to load stats: ${e.message}</div>`;
+    }
+  }
 </script>
 
 <div id="drag-overlay">
