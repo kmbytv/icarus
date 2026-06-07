@@ -56,7 +56,9 @@
     "Per session cost is $0.012 using DeepSeek V4 Flash.",
     "Пользователь 17 лет, живёт на Дальнем Востоке РФ и планирует переезд в Японию.",
     "Пользователь строит AI-систему KAI для персонализированного обучения с бюджетом на API $10.",
-    "Пользователь использует стек Node.js, Python, Telegram боты, n8n и API Claude/Gemini."
+    "Пользователь использует стек Node.js, Python, Telegram боты, n8n и API Claude/Gemini.",
+    "Память ассистента сейчас хранится в простом JSON-файле memory_core.json",
+    "Планируется ввести типизацию фактов: user_info, preferences, project_state, learning_progress"
   ],
-  "updated_at": "2026-06-07T10:47:51.692Z"
+  "updated_at": "2026-06-07T10:56:28.935Z"
 }
