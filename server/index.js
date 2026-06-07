@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import client from './openrouter.js';
 import { executeTool } from './tools/code.js';
+import { runCode } from './tools/runner.js';
 import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
 import { webSearch, webFetch } from './tools/search.js';
 import { getWeather } from './tools/weather.js';
@@ -318,6 +319,21 @@ app.post('/chat', async (req, res) => {
               },
             },
           },
+          {
+            type: 'function',
+            function: {
+              name: 'code_run',
+              description: 'Выполнить код в реальном окружении (Node.js или Python). Возвращает stdout/stderr. Используй когда нужно запустить, проверить или вычислить что-то.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  code:     { type: 'string', description: 'Код для выполнения' },
+                  language: { type: 'string', enum: ['js', 'python', 'bash'], description: 'Язык: js, python, или bash' },
+                },
+                required: ['code'],
+              },
+            },
+          },
           ...getMCPTools(),
           ...(req.body.composioKey ? await getComposioTools(req.body.composioKey) : []),
         ],
@@ -377,6 +393,7 @@ app.post('/chat', async (req, res) => {
           case 'github_write_file': result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
           case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                  break;
           case 'get_weather':       result = await getWeather(toolCall.args.city, toolCall.args.units);                      break;
+          case 'code_run':          result = await runCode(toolCall.args);                                                    break;
           default:
             if (isComposioTool(toolCall.toolName)) {
               const actionName = toolCall.toolName.replace('composio__', '');

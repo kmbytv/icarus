@@ -518,6 +518,17 @@
       color: var(--text-secondary);
     }
 
+    /* Run result block */
+    .run-result {
+      margin: 6px 0; border-radius: var(--radius-sm);
+      border-left: 3px solid; padding: 8px 10px;
+      font-family: var(--font-mono); font-size: 11px;
+    }
+    .run-result.success { border-color: #34d399; background: rgba(52,211,153,.06); }
+    .run-result.error   { border-color: #f87171; background: rgba(248,113,113,.06); }
+    .run-result-label { font-weight: 700; font-size: 10px; display: block; margin-bottom: 4px; opacity: .8; }
+    .run-result pre { margin: 0; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+
     /* Tool event rows — route line style */
     .ctool-chain {
       display: flex; flex-direction: column;
@@ -2142,9 +2153,18 @@
           } else if (ev.type === 'plan') {
             agentBubble.textContent = 'Plan ready — generating code…';
           } else if (ev.type === 'code_delta') {
-            accumulated += ev.text;
+            accumulated = ev.text; // replace, not append (each iteration is full code)
             showCodeOutput(accumulated);
             feed.scrollTop = feed.scrollHeight;
+          } else if (ev.type === 'run_result') {
+            const resultEl = document.createElement('div');
+            resultEl.className = ev.success ? 'run-result success' : 'run-result error';
+            resultEl.innerHTML = `<span class="run-result-label">${ev.success ? '✓ Output' : '✗ Error'}</span><pre>${
+              (ev.output || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            }</pre>`;
+            feed.appendChild(resultEl);
+            feed.scrollTop = feed.scrollHeight;
+            agentBubble.textContent = ev.success ? 'Done ✓' : 'Fixing…';
           } else if (ev.type === 'delta') {
             accumulated += ev.text;
             agentBubble.textContent = accumulated;
