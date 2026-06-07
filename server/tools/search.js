@@ -1,11 +1,18 @@
 import Exa from 'exa-js';
 
-const exa = new Exa(process.env.EXA_API_KEY);
+let _exa = null;
+function getExa() {
+  if (!_exa) {
+    if (!process.env.EXA_API_KEY) throw new Error('EXA_API_KEY not configured');
+    _exa = new Exa(process.env.EXA_API_KEY);
+  }
+  return _exa;
+}
 
 export async function webSearch(query, options = {}) {
   console.log('[tool] web_search called with:', query);
   try {
-    const result = await exa.searchAndContents(query, {
+    const result = await getExa().searchAndContents(query, {
       numResults: options.numResults || 5,
       useAutoprompt: true,
       text: { maxCharacters: 2000 },
@@ -29,7 +36,7 @@ export async function webSearch(query, options = {}) {
 export async function webFetch(url) {
   console.log('[tool] web_fetch called with:', url);
   try {
-    const result = await exa.getContents([url], {
+    const result = await getExa().getContents([url], {
       text: { maxCharacters: 5000 },
     });
     console.log('[tool] web_fetch success');

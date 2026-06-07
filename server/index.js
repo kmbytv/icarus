@@ -188,6 +188,7 @@ app.post('/chat', async (req, res) => {
     ];
 
     let fullAssistantText = '';
+    let toolRoundCount = 0;
 
     const plan = await runPlanner(message.trim());
     if (plan) send({ type: 'plan', steps: plan.steps });
@@ -364,8 +365,8 @@ app.post('/chat', async (req, res) => {
       }
       fullAssistantText += '\n' + resultLine;
 
-      const toolRounds = messages.filter(m => m.role === 'user' && m.content.startsWith('{"tool_result"')).length;
-      if (toolRounds >= 6) break;
+      toolRoundCount++;
+      if (toolRoundCount >= 6) break;
     }
 
     history.push({ role: 'user',      content: message.trim() });
