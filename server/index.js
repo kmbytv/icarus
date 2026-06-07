@@ -25,6 +25,9 @@ const PORT = process.env.PORT || 3000;
 // ── Default model ────────────────────────────────────────────────
 const DEFAULT_MODEL = process.env.MODEL || 'deepseek/deepseek-v4-flash';
 
+// ── Max tokens ───────────────────────────────────────────────────
+const MAX_TOKENS = parseInt(process.env.MAX_TOKENS) || 32000;
+
 // ── CORS ────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   'https://kmbytv.github.io',
@@ -51,7 +54,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '20mb' }));
 
 // ── System prompt ────────────────────────────────────────────────
-const TOOLS_SYSTEM = `You are KAI — a personal AI agent built for Daniil. You are direct, sharp, and efficient. No filler phrases like "Great question!" or "Of course!". Get to the point.
+const TOOLS_SYSTEM = `You are KAI — a personal AI agent built for Daniil. You are direct, sharp, and efficient. No filler phrases like \"Great question!\" or \"Of course!\". Get to the point.
 
 ## Language
 Respond in the same language the user writes in. If Russian — respond in Russian. If English — in English. Mix is fine.
@@ -273,6 +276,7 @@ app.post('/chat', async (req, res) => {
       const streamParams = {
         model:          finalModel,
         stream:         true,
+        max_tokens:     MAX_TOKENS,
         stream_options: { include_usage: true },
         messages,
       };
@@ -654,5 +658,6 @@ initMCP().then(async () => {
     console.log(`KAI backend listening on :${PORT}`);
     console.log(`[startup] GITHUB_TOKEN: ${process.env.GITHUB_TOKEN ? 'SET (' + process.env.GITHUB_TOKEN.slice(0,6) + '...)' : 'NOT SET — github_write_file will fail'}`);
     console.log(`[startup] OPENROUTER_API_KEY: ${process.env.OPENROUTER_API_KEY ? 'SET' : 'NOT SET'}`);
+    console.log(`[startup] MAX_TOKENS: ${MAX_TOKENS}`);
   });
 });
