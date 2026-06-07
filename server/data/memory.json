@@ -53,7 +53,10 @@
     "User wants to build a RAG system for personalized studying.",
     "Claude cannot adapt to user's knowledge level or remember context across sessions.",
     "Monthly cost for 90 study sessions is $1.08.",
-    "Per session cost is $0.012 using DeepSeek V4 Flash."
+    "Per session cost is $0.012 using DeepSeek V4 Flash.",
+    "Пользователь 17 лет, живёт на Дальнем Востоке РФ и планирует переезд в Японию.",
+    "Пользователь строит AI-систему KAI для персонализированного обучения с бюджетом на API $10.",
+    "Пользователь использует стек Node.js, Python, Telegram боты, n8n и API Claude/Gemini."
   ],
-  "updated_at": "2026-06-07T10:43:15.341Z"
+  "updated_at": "2026-06-07T10:47:51.692Z"
 }
