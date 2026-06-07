@@ -521,6 +521,30 @@ app.post('/code', async (req, res) => {
   }
 });
 
+// ── GET /session/:id — fetch UI-friendly history ────────────────
+app.get('/session/:id', (req, res) => {
+  const raw = getHistory(req.params.id);
+  const messages = [];
+  for (const msg of raw) {
+    if (msg.role === 'user') {
+      const text = typeof msg.content === 'string'
+        ? msg.content
+        : Array.isArray(msg.content)
+          ? msg.content.filter(p => p.type === 'text').map(p => p.text).join('')
+          : '';
+      if (text) messages.push({ role: 'user', text });
+    } else if (msg.role === 'assistant') {
+      const text = typeof msg.content === 'string'
+        ? msg.content
+        : Array.isArray(msg.content)
+          ? msg.content.filter(p => p.type === 'text').map(p => p.text).join('')
+          : '';
+      if (text) messages.push({ role: 'agent', text });
+    }
+  }
+  res.json({ messages });
+});
+
 // ── DELETE /session/:id — clear history ─────────────────────────
 app.delete('/session/:id', (req, res) => {
   writeJSON(`session_${req.params.id}.json`, []);

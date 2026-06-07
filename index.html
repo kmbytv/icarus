@@ -1661,6 +1661,8 @@
   let lastMsgTime = null;
   const MSG_LIMIT = 50;
 
+  const BACKEND = 'https://icarus-production-5c67.up.railway.app';
+
   // ── Chat persistence ────────────────────────────────────────
   const STORAGE_KEY = 'kai_chat_history';
 
@@ -1674,12 +1676,14 @@
     } catch {}
   }
 
-  function loadHistory() {
+  async function loadHistory() {
     try {
-      const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      if (!history.length) return;
+      const res = await fetch(`${BACKEND}/session/main`);
+      if (!res.ok) return;
+      const { messages } = await res.json();
+      if (!messages.length) return;
       document.getElementById('empty')?.remove();
-      for (const item of history) {
+      for (const item of messages) {
         if (item.role === 'user') {
           addMessage('user', item.text);
         } else if (item.role === 'agent') {
@@ -1687,6 +1691,7 @@
           renderAgentBody(bubble, item.text);
         }
       }
+      scrollToBottom();
     } catch {}
   }
 
@@ -2394,6 +2399,7 @@
   function clearFeed() {
     msgCount = 0; lastMsgTime = null; updateProgress();
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    fetch(`${BACKEND}/session/main`, { method: 'DELETE' }).catch(() => {});
     const wrap = document.getElementById('feed-inner');
     wrap.innerHTML = `
       <div id="empty">
@@ -2510,7 +2516,6 @@
   }
 
   // ── Agent stub ───────────────────────────────────────────────
-  const BACKEND = 'https://icarus-production-5c67.up.railway.app';
 
   // ── Deploy watcher ───────────────────────────────────────────
   let _deployTimer = null;
