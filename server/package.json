@@ -16,7 +16,6 @@
     "@composio/core": "^0.10.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^21.0.2",
-    "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "exa-js": "^2.13.0",
