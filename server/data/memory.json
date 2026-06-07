@@ -49,7 +49,9 @@
     "The deepseek model in index.js is much cheaper at $0.15/$0.60 per 1M tokens.",
     "Пользователь упомянул модель DeepSeek V4 Pro.",
     "DeepSeek V4 Pro costs $2/$8 per 1M tokens.",
-    "The Coder role uses DeepSeek V4 Pro, which is 10+ times more expensive than Gemini 2.5 Flash."
+    "The Coder role uses DeepSeek V4 Pro, which is 10+ times more expensive than Gemini 2.5 Flash.",
+    "User wants to build a RAG system for personalized studying.",
+    "Claude cannot adapt to user's knowledge level or remember context across sessions."
   ],
-  "updated_at": "2026-06-07T10:25:09.797Z"
+  "updated_at": "2026-06-07T10:38:45.788Z"
 }
