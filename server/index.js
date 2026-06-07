@@ -147,6 +147,7 @@ app.post('/chat', async (req, res) => {
     let fullAssistantText = '';
 
     const plan = await runPlanner(message.trim());
+    console.log('[planner] model:', plan?.model ?? 'default (deepseek/deepseek-v4-flash)');
     let activeModel = 'deepseek/deepseek-v4-flash';
     let useReasoning = false;
     if (plan) {
