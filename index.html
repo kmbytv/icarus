@@ -360,32 +360,16 @@
       font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);
     }
     .integration-status.connected { color: #34d399; }
-    /* toggle switch */
-    .int-toggle { position: relative; width: 30px; height: 17px; flex-shrink: 0; }
-    .int-toggle input { opacity: 0; width: 0; height: 0; }
-    .int-toggle-slider {
-      position: absolute; inset: 0; background: var(--border);
-      border-radius: 17px; cursor: pointer; transition: background .2s;
+    /* Connect button */
+    .int-connect-btn {
+      font-size: 11px; font-family: var(--font-mono); font-weight: 600;
+      padding: 4px 10px; border-radius: var(--radius-sm); cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface-raise);
+      color: var(--text-primary); transition: background .15s, color .15s, border-color .15s;
+      flex-shrink: 0; white-space: nowrap;
     }
-    .int-toggle-slider::before {
-      content: ''; position: absolute;
-      width: 13px; height: 13px; left: 2px; top: 2px;
-      background: white; border-radius: 50%; transition: transform .2s;
-    }
-    .int-toggle input:checked + .int-toggle-slider { background: #6366f1; }
-    .int-toggle input:checked + .int-toggle-slider::before { transform: translateX(13px); }
-    /* token input that slides open */
-    .integration-token-wrap {
-      overflow: hidden; max-height: 0; transition: max-height .25s ease;
-    }
-    .integration-token-wrap.open { max-height: 60px; }
-    .integration-token-wrap input {
-      width: 100%; background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 5px 9px; font-size: 11px; font-family: var(--font-mono);
-      color: var(--text-primary); outline: none; margin-top: 5px;
-    }
-    .integration-token-wrap input:focus { border-color: var(--text-muted); }
+    .int-connect-btn:hover { border-color: #6366f1; color: #818cf8; }
+    .int-connect-btn.connected { border-color: #34d399; color: #34d399; background: rgba(52,211,153,.08); }
 
     /* Sidebar progress bar */
     #sidebar-progress {
@@ -1424,6 +1408,11 @@
 
           <div class="settings-section-title">Integrations</div>
 
+          <div class="setting-row">
+            <label>Composio API Key</label>
+            <input type="password" id="composio-key-input" placeholder="composio_..." oninput="saveComposioKey()">
+          </div>
+
           <div id="integrations-list">
             <!-- Notion -->
             <div class="integration-row">
@@ -1432,13 +1421,7 @@
                 <div class="integration-name">Notion</div>
                 <div class="integration-status" id="int-status-notion">not connected</div>
               </div>
-              <label class="int-toggle">
-                <input type="checkbox" id="int-toggle-notion" onchange="toggleIntegration('notion', this)">
-                <span class="int-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="integration-token-wrap" id="int-token-wrap-notion">
-              <input type="password" id="int-token-notion" placeholder="Notion token (secret_...)" oninput="saveIntegrationToken('notion')">
+              <button class="int-connect-btn" id="int-btn-notion" onclick="connectIntegration('notion')">Connect</button>
             </div>
 
             <!-- Todoist -->
@@ -1448,13 +1431,7 @@
                 <div class="integration-name">Todoist</div>
                 <div class="integration-status" id="int-status-todoist">not connected</div>
               </div>
-              <label class="int-toggle">
-                <input type="checkbox" id="int-toggle-todoist" onchange="toggleIntegration('todoist', this)">
-                <span class="int-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="integration-token-wrap" id="int-token-wrap-todoist">
-              <input type="password" id="int-token-todoist" placeholder="Todoist API token" oninput="saveIntegrationToken('todoist')">
+              <button class="int-connect-btn" id="int-btn-todoist" onclick="connectIntegration('todoist')">Connect</button>
             </div>
 
             <!-- Google Calendar -->
@@ -1464,13 +1441,17 @@
                 <div class="integration-name">Google Calendar</div>
                 <div class="integration-status" id="int-status-google-calendar">not connected</div>
               </div>
-              <label class="int-toggle">
-                <input type="checkbox" id="int-toggle-google-calendar" onchange="toggleIntegration('google-calendar', this)">
-                <span class="int-toggle-slider"></span>
-              </label>
+              <button class="int-connect-btn" id="int-btn-google-calendar" onclick="connectIntegration('google-calendar')">Connect</button>
             </div>
-            <div class="integration-token-wrap" id="int-token-wrap-google-calendar">
-              <input type="password" id="int-token-google-calendar" placeholder="Refresh token" oninput="saveIntegrationToken('google-calendar')">
+
+            <!-- GitHub -->
+            <div class="integration-row">
+              <div class="integration-icon">🐙</div>
+              <div class="integration-info">
+                <div class="integration-name">GitHub</div>
+                <div class="integration-status" id="int-status-github">not connected</div>
+              </div>
+              <button class="int-connect-btn" id="int-btn-github" onclick="connectIntegration('github')">Connect</button>
             </div>
           </div>
         </div>
@@ -1786,40 +1767,88 @@
     document.getElementById('settings-nav').scrollIntoView({ behavior: 'smooth' });
   }
 
-  // ── Integrations ────────────────────────────────────────────
-  const INTEGRATIONS = ['notion', 'todoist', 'google-calendar'];
+  // ── Integrations (Composio) ──────────────────────────────────
+  const INTEGRATIONS = ['notion', 'todoist', 'google-calendar', 'github'];
 
-  function toggleIntegration(name, checkbox) {
-    const wrap = document.getElementById(`int-token-wrap-${name}`);
-    wrap.classList.toggle('open', checkbox.checked);
-    if (checkbox.checked) {
-      document.getElementById(`int-token-${name}`)?.focus();
-    } else {
-      // Clear token and status if toggled off
-      try { localStorage.removeItem(`kai_int_token_${name}`); } catch(e) {}
-      setIntStatus(name, false);
+  function saveComposioKey() {
+    const key = document.getElementById('composio-key-input')?.value.trim();
+    try { localStorage.setItem('kai_composio_key', key); } catch(e) {}
+    if (key) fetchIntegrationStatuses(key);
+  }
+
+  async function connectIntegration(name) {
+    const key = (() => { try { return localStorage.getItem('kai_composio_key') || ''; } catch(e) { return ''; } })();
+    if (!key) { alert('Сначала введи Composio API Key'); return; }
+
+    const btn = document.getElementById(`int-btn-${name}`);
+    btn.textContent = '...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`${BACKEND}/composio/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ app: name, composioKey: key }),
+      });
+      const data = await res.json();
+      if (data.redirectUrl) {
+        // OAuth: open in new tab, poll for completion
+        window.open(data.redirectUrl, '_blank');
+        btn.textContent = 'Waiting…';
+        pollIntegrationStatus(name, key);
+      } else if (data.ok) {
+        setIntStatus(name, true);
+        btn.textContent = 'Connected';
+        btn.classList.add('connected');
+        btn.disabled = false;
+      } else {
+        throw new Error(data.error || 'Failed');
+      }
+    } catch(err) {
+      btn.textContent = 'Connect';
+      btn.disabled = false;
+      console.error('[int]', name, err.message);
     }
-    try { localStorage.setItem(`kai_int_enabled_${name}`, checkbox.checked ? '1' : ''); } catch(e) {}
-    if (checkbox.checked) sendIntegrationTokenToServer(name);
   }
 
-  function saveIntegrationToken(name) {
-    const token = document.getElementById(`int-token-${name}`)?.value.trim();
-    try { localStorage.setItem(`kai_int_token_${name}`, token); } catch(e) {}
-    sendIntegrationTokenToServer(name);
+  function pollIntegrationStatus(name, key, attempts = 0) {
+    if (attempts > 20) {
+      const btn = document.getElementById(`int-btn-${name}`);
+      if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+      return;
+    }
+    setTimeout(async () => {
+      try {
+        const res = await fetch(`${BACKEND}/composio/status?app=${name}`, {
+          headers: { 'x-composio-key': key },
+        });
+        const data = await res.json();
+        if (data.connected) {
+          setIntStatus(name, true);
+          const btn = document.getElementById(`int-btn-${name}`);
+          if (btn) { btn.textContent = 'Connected'; btn.classList.add('connected'); btn.disabled = false; }
+        } else {
+          pollIntegrationStatus(name, key, attempts + 1);
+        }
+      } catch { pollIntegrationStatus(name, key, attempts + 1); }
+    }, 3000);
   }
 
-  function sendIntegrationTokenToServer(name) {
-    const token = document.getElementById(`int-token-${name}`)?.value.trim();
-    if (!token) return;
-    fetch(`${BACKEND}/integrations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, token }),
-    })
-      .then(r => r.json())
-      .then(d => setIntStatus(name, d.ok))
-      .catch(() => setIntStatus(name, false));
+  async function fetchIntegrationStatuses(key) {
+    try {
+      const res = await fetch(`${BACKEND}/composio/status`, {
+        headers: { 'x-composio-key': key },
+      });
+      const data = await res.json();
+      for (const name of INTEGRATIONS) {
+        setIntStatus(name, !!data[name]);
+        const btn = document.getElementById(`int-btn-${name}`);
+        if (btn) {
+          btn.textContent = data[name] ? 'Connected' : 'Connect';
+          btn.classList.toggle('connected', !!data[name]);
+        }
+      }
+    } catch(e) {}
   }
 
   function setIntStatus(name, connected) {
@@ -1830,20 +1859,9 @@
   }
 
   function initIntegrations() {
-    for (const name of INTEGRATIONS) {
-      const enabled = (() => { try { return localStorage.getItem(`kai_int_enabled_${name}`) === '1'; } catch(e) { return false; } })();
-      const token   = (() => { try { return localStorage.getItem(`kai_int_token_${name}`) || ''; } catch(e) { return ''; } })();
-      const toggle  = document.getElementById(`int-toggle-${name}`);
-      const wrap    = document.getElementById(`int-token-wrap-${name}`);
-      const input   = document.getElementById(`int-token-${name}`);
-      if (!toggle) continue;
-      toggle.checked = enabled;
-      if (input) input.value = token;
-      if (enabled) {
-        wrap?.classList.add('open');
-        if (token) setIntStatus(name, true);
-      }
-    }
+    const key = (() => { try { return localStorage.getItem('kai_composio_key') || ''; } catch(e) { return ''; } })();
+    const input = document.getElementById('composio-key-input');
+    if (input && key) { input.value = key; fetchIntegrationStatuses(key); }
   }
 
   // ── API Banner ──────────────────────────────────────────────
@@ -2414,8 +2432,9 @@
     abortController = new AbortController();
 
     try {
-      const savedModel = (() => { try { return localStorage.getItem('kai_model') || ''; } catch { return ''; } })();
-      const payload = { message: userText, sessionId: 'main', systemPrompt, ...(savedModel && { model: savedModel }) };
+      const savedModel      = (() => { try { return localStorage.getItem('kai_model') || ''; } catch { return ''; } })();
+      const composioKey     = (() => { try { return localStorage.getItem('kai_composio_key') || ''; } catch { return ''; } })();
+      const payload = { message: userText, sessionId: 'main', systemPrompt, ...(savedModel && { model: savedModel }), ...(composioKey && { composioKey }) };
       if (file) payload.file = { name: file.name, mimeType: file.mimeType, dataUrl: file.dataUrl };
 
       const res = await fetch(`${BACKEND}/chat`, {

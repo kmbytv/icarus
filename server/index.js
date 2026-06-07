@@ -6,6 +6,7 @@ import { executeTool } from './tools/code.js';
 import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github.js';
 import { webSearch, webFetch } from './tools/search.js';
 import { getWeather } from './tools/weather.js';
+import { initiateConnection, getConnectionStatus, getComposioTools, executeComposioAction, isComposioTool } from './tools/composio.js';
 import { runPlanner } from './planner.js';
 import { runCodeAgent } from './code-agent.js';
 import { classifyTask } from './router.js';
@@ -318,6 +319,7 @@ app.post('/chat', async (req, res) => {
             },
           },
           ...getMCPTools(),
+          ...(req.body.composioKey ? await getComposioTools(req.body.composioKey) : []),
         ],
       });
 
@@ -376,7 +378,10 @@ app.post('/chat', async (req, res) => {
           case 'github_list_files': result = await githubListFiles(toolCall.args.dir_path);                                  break;
           case 'get_weather':       result = await getWeather(toolCall.args.city, toolCall.args.units);                      break;
           default:
-            if (isMCPTool(toolCall.toolName)) {
+            if (isComposioTool(toolCall.toolName)) {
+              const actionName = toolCall.toolName.replace('composio__', '');
+              result = await executeComposioAction(actionName, toolCall.args, req.body.composioKey);
+            } else if (isMCPTool(toolCall.toolName)) {
               result = await callMCPTool(toolCall.toolName, toolCall.args);
             } else {
               result = await executeTool(toolCall.toolName, toolCall.args);
@@ -459,6 +464,30 @@ app.post('/code', async (req, res) => {
 app.delete('/session/:id', (req, res) => {
   writeJSON(`session_${req.params.id}.json`, []);
   res.json({ ok: true });
+});
+
+// ── Composio OAuth ───────────────────────────────────────────────
+app.post('/composio/connect', async (req, res) => {
+  const { app, composioKey } = req.body;
+  if (!app || !composioKey) return res.status(400).json({ error: 'app and composioKey required' });
+  try {
+    const data = await initiateConnection(app, composioKey);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/composio/status', async (req, res) => {
+  const composioKey = req.headers['x-composio-key'];
+  const app = req.query.app || null;
+  if (!composioKey) return res.status(400).json({ error: 'x-composio-key header required' });
+  try {
+    const data = await getConnectionStatus(composioKey, app);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── POST /integrations — save token + hot-reload MCP server ─────
