@@ -39,7 +39,10 @@
     "Deployment is skipped if tests fail.",
     "npm ci failed with exit code 1 on Railway.",
     "The package-lock.json in server/ was not updated after adding vitest.",
-    "The deployment issue might be due to vitest being in the root package.json instead of server/."
+    "The deployment issue might be due to vitest being in the root package.json instead of server/.",
+    "Railway fails at the 'Build image' stage with error 'Failed to build an image'.",
+    "The last commit deployed via GitHub is 'memory: add 1 fact(s)' with path '/server'.",
+    "Railway correctly identifies '/server' as the project root directory."
   ],
-  "updated_at": "2026-06-07T10:08:25.959Z"
+  "updated_at": "2026-06-07T10:09:36.658Z"
 }
