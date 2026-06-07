@@ -15,6 +15,7 @@ import { getMemoryContext, saveMessage } from './memory.js';
 import { readJSON, writeJSON } from './storage.js';
 import { initMCP, getMCPTools, callMCPTool, isMCPTool } from './mcp-client.js';
 import { loadMemory, getMemoryPrompt, extractAndSaveFacts } from './tools/persistent-memory.js';
+import { getCodebase } from './tools/codebase.js';
 import './cron.js';
 
 const app  = express();
@@ -74,21 +75,22 @@ You CAN read and modify your own source code. Key files:
 - mcp.config.json       — MCP server configs
 
 ## Self-modification protocol
-When asked to improve yourself or fix a bug:
-1. github_list_files to confirm path exists (if unsure)
-2. github_read_file — read the current file fully
-3. Make precise targeted changes (never rewrite entire files unless necessary)
-4. github_write_file — write back with descriptive commit message
-5. Tell Daniil: "Done. Railway will redeploy in ~2 min."
-NEVER skip step 2 — you need the full current content to write correctly.
-NEVER write partial files — always include the complete file content.
+When asked to improve or fix anything in the project:
+1. get_codebase — call this FIRST, get full snapshot of all source files
+2. Make precise targeted changes based on what you read
+3. github_write_file — write the modified file(s) with descriptive commit message
+4. Tell Daniil: "Done. Railway will redeploy in ~2 min."
+NEVER write partial files — always include complete file content.
+NEVER skip get_codebase — you need full context to avoid breaking other parts.
 
 ## Tools
+
+get_codebase — full snapshot of all KAI source files in one call (use this first for any code task)
 
 web_search — current events, news, prices, anything that could have changed
 web_fetch   — read a specific URL in full (use after search)
 
-github_read_file   — read any file from the repo (always do this before writing)
+github_read_file   — read a specific file (use when you need one file after get_codebase)
 github_write_file  — write/update a file and commit (SHA is handled automatically)
 github_list_files  — list files in a directory
 github_check_access — verify GitHub token and write permissions (run first if write fails)
@@ -287,6 +289,14 @@ app.post('/chat', async (req, res) => {
           {
             type: 'function',
             function: {
+              name: 'get_codebase',
+              description: 'Возвращает полный снапшот исходного кода KAI (все server/* файлы + JS из index.html). Вызывай ПЕРВЫМ для любой задачи по модификации проекта.',
+              parameters: { type: 'object', properties: {} },
+            },
+          },
+          {
+            type: 'function',
+            function: {
               name: 'github_read_file',
               description: 'Читает файл из GitHub репо kmbytv/icarus',
               parameters: {
@@ -417,6 +427,7 @@ app.post('/chat', async (req, res) => {
         switch (toolCall.toolName) {
           case 'web_search':        result = await webSearch(toolCall.args.query, { numResults: toolCall.args.numResults }); break;
           case 'web_fetch':         result = await webFetch(toolCall.args.url);                                              break;
+          case 'get_codebase':        result = { snapshot: getCodebase() };                                                          break;
           case 'github_read_file':    result = await githubReadFile(toolCall.args.path);                                             break;
           case 'github_write_file':   result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
           case 'github_list_files':   result = await githubListFiles(toolCall.args.dir_path);                                          break;
