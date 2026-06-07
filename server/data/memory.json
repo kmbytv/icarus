@@ -61,7 +61,8 @@
     "Планируется ввести типизацию фактов: user_info, preferences, project_state, learning_progress",
     "Цель KAI — заменить Claude Chat для учёбы с помощью RAG и методик Гарварда/Стэнфорда.",
     "План учёбы — 3 сессии в день по часу.",
-    "DeepSeek V4 Pro израсходовал $0.50 на одной задаче, что стало причиной перехода на Flash."
+    "DeepSeek V4 Pro израсходовал $0.50 на одной задаче, что стало причиной перехода на Flash.",
+    "A one-hour tutoring session with DeepSeek Flash costs $0.00216."
   ],
-  "updated_at": "2026-06-07T11:03:30.832Z"
+  "updated_at": "2026-06-07T11:10:11.657Z"
 }
