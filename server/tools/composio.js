@@ -57,27 +57,15 @@ export async function getConnectionStatus(composioKey, app = null) {
     const accounts = await composio.connectedAccounts.list({ userIds: ['default'] });
     const items = accounts.items ?? [];
 
-    // Log raw data to understand the shape
-    console.log('[composio] accounts raw:', JSON.stringify(items.slice(0, 3), null, 2));
-
-    // Try multiple possible field names for toolkit identifier
+    // toolkit is an object: { slug: 'notion' }
     const connectedToolkits = new Set(
       items
-        .filter(a => {
-          const s = (a.status ?? a.connectionStatus ?? '').toUpperCase();
-          return s === 'ACTIVE' || s === 'CONNECTED' || s === '' || s === undefined;
-        })
-        .flatMap(a => [
-          a.toolkit?.toLowerCase(),
-          a.toolkitSlug?.toLowerCase(),
-          a.appName?.toLowerCase(),
-          a.app?.toLowerCase(),
-          a.integration?.toolkit?.toLowerCase(),
-        ])
+        .filter(a => (a.status ?? '').toUpperCase() === 'ACTIVE')
+        .map(a => a.toolkit?.slug?.toLowerCase())
         .filter(Boolean)
     );
 
-    console.log('[composio] connected toolkits:', [...connectedToolkits]);
+    console.log('[composio] connected:', [...connectedToolkits]);
 
     if (app) {
       const slug = TOOLKIT_MAP[app]?.toLowerCase();
