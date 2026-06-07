@@ -171,6 +171,24 @@
     .hdr-btn.primary { background: var(--accent); border-color: transparent; color: var(--bg); font-weight: 500; }
     .hdr-btn.primary:hover { background: #FFFFFF; border-color: transparent; }
 
+    /* ── Deploy Banner ─────────────────────────────────────────── */
+    #deploy-banner {
+      flex-shrink: 0;
+      display: none; align-items: center; justify-content: space-between;
+      padding: 7px 20px 7px calc(var(--sidebar-w) + 20px);
+      background: rgba(61,214,140,0.05);
+      border-bottom: 1px solid rgba(61,214,140,0.15);
+      font-size: 12px; color: var(--green);
+      font-family: var(--font-mono); letter-spacing: 0.03em;
+    }
+    #deploy-banner.visible { display: flex; }
+    #deploy-banner-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); margin-right: 8px; flex-shrink: 0;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    #deploy-banner-dot.done { animation: none; }
+
     /* ── API Key Warning Banner ────────────────────────────────── */
     #api-banner {
       flex-shrink: 0;
@@ -1297,6 +1315,15 @@
       </button>
     </div>
   </header>
+
+  <!-- ── Deploy Banner ──────────────────────────────────────────── -->
+  <div id="deploy-banner">
+    <div style="display:flex;align-items:center;">
+      <div id="deploy-banner-dot"></div>
+      <span id="deploy-banner-text">Deploying…</span>
+    </div>
+    <span id="deploy-banner-eta" style="opacity:0.5;font-size:11px;"></span>
+  </div>
 
   <!-- ── API Banner ───────────────────────────────────────────── -->
   <div id="api-banner">
@@ -2486,6 +2513,49 @@
   // ── Agent stub ───────────────────────────────────────────────
   const BACKEND = 'https://icarus-production-5c67.up.railway.app';
 
+  // ── Deploy watcher ───────────────────────────────────────────
+  let _deployTimer = null;
+  let _deployStart = null;
+
+  async function startDeployWatch(oldCommit) {
+    if (_deployTimer) clearInterval(_deployTimer);
+    _deployStart = Date.now();
+
+    const banner   = document.getElementById('deploy-banner');
+    const dot      = document.getElementById('deploy-banner-dot');
+    const text     = document.getElementById('deploy-banner-text');
+    const eta      = document.getElementById('deploy-banner-eta');
+
+    banner.classList.add('visible');
+    dot.classList.remove('done');
+    text.textContent = 'Deploying…';
+
+    _deployTimer = setInterval(async () => {
+      const elapsed = Math.floor((Date.now() - _deployStart) / 1000);
+      eta.textContent = `${elapsed}s`;
+
+      if (elapsed > 240) {
+        clearInterval(_deployTimer);
+        text.textContent = 'Deploy timed out';
+        dot.classList.add('done');
+        setTimeout(() => banner.classList.remove('visible'), 4000);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BACKEND}/health`, { cache: 'no-store' });
+        const data = await res.json();
+        if (data.commit && oldCommit && data.commit !== oldCommit) {
+          clearInterval(_deployTimer);
+          dot.classList.add('done');
+          text.textContent = `Deployed ✓  (${elapsed}s)`;
+          eta.textContent = '';
+          setTimeout(() => banner.classList.remove('visible'), 5000);
+        }
+      } catch { /* server still restarting */ }
+    }, 6000);
+  }
+
   async function sendToAgent(userText, file = null) {
     setStatus(true);
     const { body } = addProcessing();
@@ -2554,8 +2624,15 @@
           } else if (event.type === 'tool_call') {
             const name = (event.tool || '').replace(/_/g, ' ').toLowerCase();
             setProcessingLabel(`→ ${name}`);
+            if (event.tool === 'github_write_file') {
+              fetch(`${BACKEND}/health`, { cache: 'no-store' })
+                .then(r => r.json()).then(d => { window._preDeployCommit = d.commit; }).catch(() => {});
+            }
           } else if (event.type === 'tool_result') {
             setProcessingLabel('');
+            if (event.tool === 'github_write_file' && event.result?.success) {
+              startDeployWatch(window._preDeployCommit ?? null);
+            }
           } else if (event.type === 'plan' && Array.isArray(event.steps) && !planInserted) {
             planInserted = true;
             const planEl = document.createElement('div');

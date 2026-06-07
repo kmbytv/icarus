@@ -558,7 +558,8 @@ app.post('/integrations', async (req, res) => {
 });
 
 // ── Health check ────────────────────────────────────────────────
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+const BOOT_COMMIT = process.env.RAILWAY_GIT_COMMIT_SHA ?? 'dev';
+app.get('/health', (_req, res) => res.json({ status: 'ok', commit: BOOT_COMMIT }));
 
 initMCP().then(async () => {
   await loadMemory();
