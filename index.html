@@ -180,6 +180,13 @@
             <label>Model</label>
             <input type="text" id="model-input" value="claude-opus-4-8" placeholder="model id">
           </div>
+          <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:4px">
+            <label>System Prompt</label>
+            <textarea id="settings-system-prompt" rows="3" placeholder="Instructions KAI should always follow…" oninput="saveSystemPrompt()" style="resize:vertical;font-size:11px;font-family:var(--font-mono);background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);outline:none"></textarea>
+          </div>
+          <div class="setting-row">
+            <button onclick="resetSession()" style="width:100%;padding:6px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);border-radius:6px;color:#ff6b6b;font-size:11px;cursor:pointer">Reset session</button>
+          </div>
         </div>
 
       </div><!-- .sidebar-scroll -->

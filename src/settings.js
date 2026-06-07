@@ -39,3 +39,30 @@ export function initBanner() {
 export function togglePin() {
   document.getElementById('bc-star').classList.toggle('pinned');
 }
+
+export function saveSystemPrompt() {
+  const val = document.getElementById('settings-system-prompt').value;
+  try { localStorage.setItem('kai_system_prompt', val); } catch {}
+  const area = document.getElementById('system-prompt-area');
+  if (area) area.value = val;
+}
+
+export function resetSession() {
+  fetch('https://icarus-production-5c67.up.railway.app/session/default', { method: 'DELETE' })
+    .catch(() => {});
+  try { localStorage.removeItem('kai_chat_history'); } catch {}
+  const clearFeedFn = window.clearFeed;
+  if (clearFeedFn) clearFeedFn();
+}
+
+export function initSystemPrompt() {
+  try {
+    const saved = localStorage.getItem('kai_system_prompt');
+    if (saved) {
+      const settingsArea = document.getElementById('settings-system-prompt');
+      if (settingsArea) settingsArea.value = saved;
+      const promptArea = document.getElementById('system-prompt-area');
+      if (promptArea) promptArea.value = saved;
+    }
+  } catch {}
+}
