@@ -10,7 +10,7 @@ import { getWeather } from './tools/weather.js';
 import { initiateConnection, getConnectionStatus, getComposioTools, executeComposioAction, isComposioTool } from './tools/composio.js';
 import { runPlanner } from './planner.js';
 import { runCodeAgent } from './code-agent.js';
-import { classifyTask } from './router.js';
+import { classifyTask, classifyCodeType } from './router.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import { readJSON, writeJSON } from './storage.js';
 import { initMCP, getMCPTools, callMCPTool, isMCPTool } from './mcp-client.js';
@@ -208,19 +208,25 @@ app.post('/chat', async (req, res) => {
     send({ type: 'agent', agent: route });
 
     if (route === 'code' && !modelOverride) {
-      // Hand off to the two-step code agent (architect → coder)
-      await runCodeAgent(message.trim(), send);
-      history.push({ role: 'user',      content: message.trim() });
-      history.push({ role: 'assistant', content: '[code agent]' });
-      saveHistory(sessionId, history);
-      saveMessage(sessionId, 'user',      message.trim());
-      saveMessage(sessionId, 'assistant', '[code agent]');
+      // Layer 2: distinguish isolated sandbox vs real project modification
+      const codeType = await classifyCodeType(message.trim(), process.env.OPENROUTER_API_KEY);
+      console.log('[chat] code type:', codeType);
+      send({ type: 'agent', agent: codeType === 'sandbox' ? 'code' : 'chat' });
 
-      extractAndSaveFacts(sessionId, message.trim(), '[code agent]', process.env.OPENROUTER_API_KEY)
-        .catch(e => console.error('[memory] background save failed:', e.message));
-
-      send({ type: 'done' });
-      return res.end();
+      if (codeType === 'sandbox') {
+        // Isolated: architect → generate → run in sandbox
+        await runCodeAgent(message.trim(), send);
+        history.push({ role: 'user',      content: message.trim() });
+        history.push({ role: 'assistant', content: '[code agent]' });
+        saveHistory(sessionId, history);
+        saveMessage(sessionId, 'user',      message.trim());
+        saveMessage(sessionId, 'assistant', '[code agent]');
+        extractAndSaveFacts(sessionId, message.trim(), '[code agent]', process.env.OPENROUTER_API_KEY)
+          .catch(e => console.error('[memory] background save failed:', e.message));
+        send({ type: 'done' });
+        return res.end();
+      }
+      // real_project — fall through to main agent loop with full tool access
     }
 
     // For reasoning tasks use deepseek-v4-pro with thinking enabled
