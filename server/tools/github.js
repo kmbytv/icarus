@@ -1,4 +1,8 @@
 import { Octokit } from '@octokit/rest';
+import { execFile }  from 'child_process';
+import { writeFile, unlink } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join }   from 'path';
 
 const OWNER  = 'kmbytv';
 const REPO   = 'icarus';
@@ -11,6 +15,36 @@ function octokit() {
 }
 
 const MAX_FILE_BYTES = 40_000;
+
+// ── Pre-commit syntax validation ─────────────────────────────────
+
+async function validateJS(content, filePath) {
+  const tmp = join(tmpdir(), `kai_validate_${Date.now()}.mjs`);
+  await writeFile(tmp, content, 'utf8');
+  return new Promise(resolve => {
+    execFile(process.execPath, ['--check', tmp], { timeout: 8000 }, async (err, _stdout, stderr) => {
+      await unlink(tmp).catch(() => {});
+      if (!err) return resolve(null);
+      const msg = (stderr || err.message || 'Syntax error').replace(tmp, filePath);
+      resolve(msg.trim());
+    });
+  });
+}
+
+function validateHTML(content) {
+  // Lightweight structural checks — catches most agent-generated breakage
+  const open  = (content.match(/<[a-z][^/!>]*>/gi)  ?? []).length;
+  const close = (content.match(/<\/[a-z][^>]*>/gi)  ?? []).length;
+  if (!content.includes('</html>'))   return 'Missing </html> closing tag';
+  if (Math.abs(open - close) > 10)   return `Tag imbalance: ${open} opening vs ${close} closing tags`;
+  return null;
+}
+
+async function validateContent(path, content) {
+  if (/\.m?js$/.test(path))   return validateJS(content, path);
+  if (/\.html?$/.test(path))  return validateHTML(content);
+  return null;
+}
 
 function fmtErr(err) {
   const status = err.status ?? err.response?.status;
@@ -52,6 +86,13 @@ export async function githubWriteFile(path, content, message) {
     console.error('[github] write_file: GITHUB_TOKEN not set');
     return { error: 'GITHUB_TOKEN is not configured — cannot write to GitHub' };
   }
+
+  const validationError = await validateContent(path, content);
+  if (validationError) {
+    console.error('[github] write_file blocked by validation:', path, validationError);
+    return { error: `Validation failed — file NOT written. Fix the issue and retry.\n${validationError}` };
+  }
+
   try {
     const kit = octokit();
     let sha;
