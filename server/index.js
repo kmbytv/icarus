@@ -212,7 +212,7 @@ app.post('/chat', async (req, res) => {
     ];
 
     // ── Route to specialized agent if needed ────────────────────
-    const route = classifyTask(message.trim());
+    const route = await classifyTask(message.trim(), process.env.OPENROUTER_API_KEY);
     console.log('[chat] route:', route);
     send({ type: 'agent', agent: route });
 
