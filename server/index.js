@@ -461,6 +461,31 @@ app.delete('/session/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── POST /integrations — save token + hot-reload MCP server ─────
+app.post('/integrations', async (req, res) => {
+  const { name, token } = req.body;
+  if (!name || !token) return res.status(400).json({ ok: false, error: 'name and token required' });
+
+  // Store token in process.env so mcp-client picks it up on reconnect
+  const envMap = {
+    'notion':           'NOTION_TOKEN',
+    'todoist':          'TODOIST_API_TOKEN',
+    'google-calendar':  'GOOGLE_REFRESH_TOKEN',
+  };
+  const envKey = envMap[name];
+  if (!envKey) return res.status(400).json({ ok: false, error: `Unknown integration: ${name}` });
+
+  process.env[envKey] = token;
+  console.log(`[integrations] token set for ${name}, reloading MCP...`);
+
+  try {
+    await initMCP();
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ── Health check ────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 

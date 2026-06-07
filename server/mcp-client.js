@@ -31,6 +31,10 @@ export async function initMCP() {
 
   for (const [name, def] of Object.entries(config.servers ?? {})) {
     if (def.disabled) continue;
+    // Skip if required env var is missing
+    const resolvedEnv = resolveEnv(def.env);
+    const hasToken = Object.values(resolvedEnv).some(v => v.trim() !== '');
+    if (!hasToken) { console.log(`[mcp] skipping ${name}: no token`); continue; }
 
     try {
       const transport = new StdioClientTransport({
