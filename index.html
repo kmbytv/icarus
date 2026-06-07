@@ -8,17 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/typescript.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/bash.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/json.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/css.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/xml.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/sql.min.js"></script>
   <style>
     /* ── Variables ─────────────────────────────────────────────── */
     :root {
@@ -2081,18 +2071,13 @@
   }
 
   // ── Markdown setup ───────────────────────────────────────────
-  marked.setOptions({
-    breaks: true,
-    gfm: true,
-    highlight: null,
-  });
+  marked.setOptions({ breaks: true, gfm: true });
 
   const mdRenderer = new marked.Renderer();
   mdRenderer.code = ({ text, lang }) => {
-    const language = lang && hljs.getLanguage(lang) ? lang : null;
-    const highlighted = language ? hljs.highlight(text, { language }).value : hljs.highlightAuto(text).value;
+    const escaped = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const displayLang = lang || 'code';
-    return `<pre><div class="code-block-header"><span>${displayLang}</span><button class="code-copy-btn" onclick="copyCode(this)">copy</button></div><code class="hljs language-${displayLang}">${highlighted}</code></pre>`;
+    return `<pre><div class="code-block-header"><span>${displayLang}</span><button class="code-copy-btn" onclick="copyCode(this)">copy</button></div><code>${escaped}</code></pre>`;
   };
   marked.use({ renderer: mdRenderer });
 
