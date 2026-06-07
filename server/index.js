@@ -40,7 +40,7 @@ const corsOptions = {
     cb(new Error(`CORS: origin ${origin} not allowed`));
   },
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
+  allowedHeaders: ['Content-Type', 'x-composio-key'],
   optionsSuccessStatus: 204,
 };
 
