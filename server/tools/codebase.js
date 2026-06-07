@@ -3,7 +3,7 @@ import { resolve, relative } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = resolve(fileURLToPath(import.meta.url), '..');
-const ROOT      = resolve(__dirname, '..');
+const ROOT      = resolve(__dirname, '../..');
 
 // Files to always include (relative to ROOT)
 const INCLUDE_DIRS  = ['server'];
