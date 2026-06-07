@@ -1,7 +1,10 @@
 {
   "facts": [
     "Language Learning is a top journal for language acquisition research.",
-    "Language Learning & Technology focuses on technology in language learning."
+    "Language Learning & Technology focuses on technology in language learning.",
+    "Assistant does not have real-time access to Notion or Todoist.",
+    "Notion and Todoist API tools are not currently implemented in the assistant's configuration.",
+    "The assistant can be set up with Notion and Todoist access if API tokens are added."
   ],
-  "updated_at": "2026-06-07T05:59:51.201Z"
+  "updated_at": "2026-06-07T06:29:40.009Z"
 }
