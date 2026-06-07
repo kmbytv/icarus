@@ -110,7 +110,7 @@ function parseToolCall(line) {
 
 // ── POST /chat ──────────────────────────────────────────────────
 app.post('/chat', async (req, res) => {
-  const { message, sessionId = 'default', systemPrompt } = req.body;
+  const { message, sessionId = 'default', systemPrompt, model: clientModel = '' } = req.body;
 
   if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'message is required' });
@@ -149,7 +149,7 @@ app.post('/chat', async (req, res) => {
 
     let plan = null;
     try {
-      plan = await runPlanner(message.trim());
+      plan = await runPlanner(message.trim(), clientModel);
     } catch (err) {
       console.error('[planner] ERROR:', err.message);
     }

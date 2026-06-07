@@ -116,7 +116,8 @@ export async function sendToAgent(userText, file = null) {
   abortController = new AbortController();
 
   try {
-    const payload = { message: userText, sessionId: 'main', systemPrompt };
+    const model = (() => { try { return localStorage.getItem('kai_model') || ''; } catch { return ''; } })();
+    const payload = { message: userText, sessionId: 'main', systemPrompt, ...(model && { model }) };
     if (file) payload.file = { name: file.name, mimeType: file.mimeType, dataUrl: file.dataUrl };
 
     const res = await fetch(`${BACKEND}/chat`, {

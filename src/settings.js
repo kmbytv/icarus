@@ -66,3 +66,18 @@ export function initSystemPrompt() {
     }
   } catch {}
 }
+
+export function onModelInput() {
+  const val = document.getElementById('model-input').value.trim();
+  try { localStorage.setItem('kai_model', val); } catch {}
+}
+
+export function initModel() {
+  try {
+    const saved = localStorage.getItem('kai_model');
+    if (saved) {
+      const el = document.getElementById('model-input');
+      if (el) el.value = saved;
+    }
+  } catch {}
+}

@@ -13,7 +13,7 @@ const CODING_KEYWORDS = [
   'code','function','file','class','module','component','endpoint','api',
 ];
 
-export async function runPlanner(message) {
+export async function runPlanner(message, clientModel = '') {
   try {
     const words = message.trim().split(/\s+/);
     if (words.length <= 3) return null;
@@ -52,7 +52,8 @@ Rules:
 
     const steps = parsed.steps.slice(0, 5);
     const isCoding = CODING_KEYWORDS.some(k => lower.includes(k));
-    if (isCoding) return { steps, model: 'deepseek/deepseek-v3.2', reasoning: true };
+    const resolvedModel = clientModel || (isCoding ? 'deepseek/deepseek-v3.2' : '');
+    if (resolvedModel) return { steps, model: resolvedModel, reasoning: isCoding && !clientModel };
     return { steps };
   } catch {
     return null;

@@ -3,7 +3,7 @@ import {
   updateProgress, scrollToBottom, updateScrollThumb,
   clearFeed, switchTab, toggleSidebar, toggleSection, loadHistory
 } from './ui.js';
-import { toggleSettings, openSettings, dismissBanner, onApiKeyInput, initBanner, togglePin, saveSystemPrompt, resetSession, initSystemPrompt } from './settings.js';
+import { toggleSettings, openSettings, dismissBanner, onApiKeyInput, initBanner, togglePin, saveSystemPrompt, resetSession, initSystemPrompt, onModelInput, initModel } from './settings.js';
 import {
   handleSend, handleStop, setStatus,
   handleFileSelect, clearAttachment, readFileAsDataUrl,
@@ -25,6 +25,7 @@ window.toggleSettings  = toggleSettings;
 window.onApiKeyInput   = onApiKeyInput;
 window.saveSystemPrompt = saveSystemPrompt;
 window.resetSession    = resetSession;
+window.onModelInput    = onModelInput;
 window.clearAttachment = clearAttachment;
 window.handleFileSelect = handleFileSelect;
 window.switchCodePane  = switchCodePane;
@@ -185,5 +186,6 @@ document.addEventListener('keydown', e => {
 // ── Init ─────────────────────────────────────────────────────
 initBanner();
 initSystemPrompt();
+initModel();
 updateProgress();
 loadHistory();

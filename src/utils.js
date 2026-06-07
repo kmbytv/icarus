@@ -14,7 +14,7 @@ export function formatUptime(ms) {
 export function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ── Markdown setup ───────────────────────────────────────────
-marked.setOptions({ breaks: true, gfm: true, highlight: null });
+marked.setOptions({ breaks: true, gfm: true });
 
 const mdRenderer = new marked.Renderer();
 mdRenderer.code = ({ text, lang }) => {
