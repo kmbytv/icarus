@@ -215,8 +215,10 @@ app.post('/chat', async (req, res) => {
     let fullAssistantText = '';
     let toolRoundCount = 0;
 
-    const plan = await runPlanner(message.trim());
-    if (plan) send({ type: 'plan', steps: plan.steps });
+    if (route !== 'chat') {
+      const plan = await runPlanner(message.trim());
+      if (plan) send({ type: 'plan', steps: plan.steps });
+    }
 
     while (true) {
       console.log('[chat] calling OpenRouter...');
