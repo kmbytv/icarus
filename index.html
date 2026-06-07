@@ -1784,6 +1784,9 @@
     btn.textContent = '...';
     btn.disabled = true;
 
+    // Open window synchronously before any async — browsers block popups after await
+    const win = window.open('about:blank', '_blank');
+
     try {
       const res = await fetch(`${BACKEND}/composio/connect`, {
         method: 'POST',
@@ -1792,22 +1795,25 @@
       });
       const data = await res.json();
       if (data.redirectUrl) {
-        // OAuth: open in new tab, poll for completion
-        window.open(data.redirectUrl, '_blank');
+        win.location.href = data.redirectUrl;
         btn.textContent = 'Waiting…';
         pollIntegrationStatus(name, key);
       } else if (data.ok) {
+        win.close();
         setIntStatus(name, true);
         btn.textContent = 'Connected';
         btn.classList.add('connected');
         btn.disabled = false;
       } else {
+        win.close();
         throw new Error(data.error || 'Failed');
       }
     } catch(err) {
+      try { win.close(); } catch(e) {}
       btn.textContent = 'Connect';
       btn.disabled = false;
       console.error('[int]', name, err.message);
+      alert(`Ошибка: ${err.message}`);
     }
   }
 
