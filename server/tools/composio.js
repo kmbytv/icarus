@@ -55,14 +55,33 @@ export async function getConnectionStatus(composioKey, app = null) {
   const composio = getClient(composioKey);
   try {
     const accounts = await composio.connectedAccounts.list({ userIds: ['default'] });
+    const items = accounts.items ?? [];
+
+    // Log raw data to understand the shape
+    console.log('[composio] accounts raw:', JSON.stringify(items.slice(0, 3), null, 2));
+
+    // Try multiple possible field names for toolkit identifier
     const connectedToolkits = new Set(
-      (accounts.items ?? [])
-        .filter(a => a.status === 'ACTIVE')
-        .map(a => a.toolkit?.toLowerCase())
+      items
+        .filter(a => {
+          const s = (a.status ?? a.connectionStatus ?? '').toUpperCase();
+          return s === 'ACTIVE' || s === 'CONNECTED' || s === '' || s === undefined;
+        })
+        .flatMap(a => [
+          a.toolkit?.toLowerCase(),
+          a.toolkitSlug?.toLowerCase(),
+          a.appName?.toLowerCase(),
+          a.app?.toLowerCase(),
+          a.integration?.toolkit?.toLowerCase(),
+        ])
+        .filter(Boolean)
     );
 
+    console.log('[composio] connected toolkits:', [...connectedToolkits]);
+
     if (app) {
-      return { connected: connectedToolkits.has(TOOLKIT_MAP[app]?.toLowerCase()) };
+      const slug = TOOLKIT_MAP[app]?.toLowerCase();
+      return { connected: connectedToolkits.has(slug) };
     }
 
     const result = {};
@@ -70,7 +89,8 @@ export async function getConnectionStatus(composioKey, app = null) {
       result[name] = connectedToolkits.has(slug.toLowerCase());
     }
     return result;
-  } catch {
+  } catch (err) {
+    console.error('[composio] getConnectionStatus error:', err.message);
     if (app) return { connected: false };
     return Object.fromEntries(Object.keys(TOOLKIT_MAP).map(k => [k, false]));
   }
