@@ -1,16 +1,23 @@
 // Deterministic task classifier — zero latency, no LLM call needed.
 // Returns: 'code' | 'reason' | 'chat'
+// Note: \b doesn't work with Cyrillic in JS, so we use (?<![а-яёa-z]) lookarounds or simple includes.
 
-const CODE_RU = /\b(напиш[иь]|создай|сделай|реализуй|написать|создать|сделать|реализовать|скрипт|функци[юя]|класс|модуль|компонент|парс[еи]р|бот|апи|api)\b/i;
-const CODE_EN = /\b(write|create|implement|build|generate|make|code|script|function|class|module|component|parser|bot|endpoint|refactor|debug)\b/i;
+// Must look like actual programming: verb + programming noun
+const CODE_RU = /(?:напиш[иь]|создай|сделай)\s+(?:код|скрипт|функци[юя]|класс|бот|апи|парсер|модуль|компонент|программ[уы]|утилит[уы]|сервер|эндпоинт|автоматизаци[юя])/i;
+const CODE_EN = /(?:write|create|build|make|implement|generate)\s+(?:a\s+)?(?:code|script|function|class|bot|api|parser|module|component|program|server|endpoint|tool|app|automation)/i;
 
-const REASON_RU = /\b(почему|зачем|объясни|объяснить|проанализируй|проанализировать|сравни|сравнить|разница|разбери|разберись|плюсы|минусы|стоит ли|как лучше)\b/i;
-const REASON_EN = /\b(why|explain|analyze|compare|difference|pros|cons|should i|how does|what is the best|tradeoff)\b/i;
+// Standalone programming keywords (unambiguous even without verb)
+const CODE_KWORDS_CYR = /реализуй|реализовать|отрефактори|рефакторинг|задеплой|задеплоить|скомпилируй|алгоритм|рекурси[яю]|dockerfile|вебхук/i;
+const CODE_KWORDS_LAT = /\b(?:regex|webhook|middleware|cron.?job|sql.query|implement|refactor|debug\s+(?:this|the|my)|fix\s+(?:this\s+)?(?:code|bug|error|function)|add\s+(?:a\s+)?(?:feature|endpoint|function|route))\b/i;
+
+// Reasoning signals
+const REASON_RU = /(?:почему|зачем|объясни|проанализируй|сравни|в\s+чём\s+разница|плюсы\s+и\s+минусы|стоит\s+ли|как\s+лучше|что\s+думаешь|разбери|объяснить|проанализировать)/i;
+const REASON_EN = /(?:why\s+|explain\s+|analyze\s+|compare\s+|difference\s+between|pros\s+and\s+cons|should\s+i\s+|how\s+does\s+|what\s+is\s+the\s+best|tradeoff|what\s+do\s+you\s+think)/i;
 
 export function classifyTask(message) {
   const m = message.trim();
 
-  if (CODE_RU.test(m) || CODE_EN.test(m)) return 'code';
+  if (CODE_RU.test(m) || CODE_EN.test(m) || CODE_KWORDS_CYR.test(m) || CODE_KWORDS_LAT.test(m)) return 'code';
   if (REASON_RU.test(m) || REASON_EN.test(m)) return 'reason';
   return 'chat';
 }
