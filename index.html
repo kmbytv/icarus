@@ -1906,11 +1906,10 @@
     resetChain();
 
     try {
-      const sysPrompt = document.getElementById('system-prompt-area').value.trim();
-      const res = await fetch(`${BACKEND}/chat`, {
+      const res = await fetch(`${BACKEND}/code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText, sessionId: 'code', systemPrompt: sysPrompt }),
+        body: JSON.stringify({ task: userText }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1931,20 +1930,20 @@
           let ev;
           try { ev = JSON.parse(line.slice(6)); } catch { continue; }
 
-          if (ev.type === 'delta') {
+          if (ev.type === 'status') {
+            setCodeStatus(true, ev.text);
+            const lbl = document.getElementById('cthink-label');
+            if (lbl) lbl.textContent = ev.text || 'thinking';
+          } else if (ev.type === 'plan') {
+            agentBubble.textContent = 'Plan ready — generating code…';
+          } else if (ev.type === 'code_delta') {
+            accumulated += ev.text;
+            showCodeOutput(accumulated);
+            feed.scrollTop = feed.scrollHeight;
+          } else if (ev.type === 'delta') {
             accumulated += ev.text;
             agentBubble.textContent = accumulated;
             feed.scrollTop = feed.scrollHeight;
-            const lbl = document.getElementById('cthink-label');
-            if (lbl) lbl.textContent = accumulated.slice(-30).replace(/\n/g, ' ').trim() || 'thinking';
-          } else if (ev.type === 'tool_call') {
-            const argStr = Object.entries(ev.args ?? {}).map(([k,v]) => `${k}: ${String(v).slice(0,30)}`).join(' · ');
-            lastToolKey = addCodeTool(ev.tool, argStr);
-          } else if (ev.type === 'tool_result') {
-            const resultStr = ev.result?.output ?? ev.result?.content ?? ev.result?.error ?? '';
-            const isError   = !!ev.result?.error;
-            resolveCodeTool(lastToolKey, resultStr.slice(0, 80), isError);
-            if (resultStr) showCodeOutput(resultStr);
           } else if (ev.type === 'error') {
             throw new Error(ev.message);
           } else if (ev.type === 'done') {
@@ -1952,10 +1951,6 @@
           }
         }
       }
-
-      // Try to extract a code block and display it
-      const block = extractCodeBlock(accumulated);
-      if (block) showCodeOutput(block);
 
     } catch (err) {
       agentBubble.textContent = `Error: ${err.message}`;

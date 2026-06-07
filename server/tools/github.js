@@ -4,8 +4,10 @@ const OWNER  = 'kmbytv';
 const REPO   = 'icarus';
 const BRANCH = 'gh-pages';
 
+let _octokit = null;
 function octokit() {
-  return new Octokit({ auth: process.env.GITHUB_TOKEN });
+  if (!_octokit) _octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  return _octokit;
 }
 
 const MAX_FILE_BYTES = 40_000;

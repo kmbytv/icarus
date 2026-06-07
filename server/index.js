@@ -7,6 +7,7 @@ import { githubReadFile, githubWriteFile, githubListFiles } from './tools/github
 import { webSearch, webFetch } from './tools/search.js';
 import { getWeather } from './tools/weather.js';
 import { runPlanner } from './planner.js';
+import { runCodeAgent } from './code-agent.js';
 import { getMemoryContext, saveMessage } from './memory.js';
 import { readJSON, writeJSON } from './storage.js';
 import './cron.js';
@@ -369,8 +370,15 @@ app.post('/chat', async (req, res) => {
       if (toolRoundCount >= 6) break;
     }
 
+    // Save only the model's text (strip tool result JSON from history)
+    const textOnlyAssistant = fullAssistantText
+      .split('\n')
+      .filter(l => !l.startsWith('{"tool_result"'))
+      .join('\n')
+      .trim();
+
     history.push({ role: 'user',      content: message.trim() });
-    history.push({ role: 'assistant', content: fullAssistantText });
+    history.push({ role: 'assistant', content: textOnlyAssistant || fullAssistantText });
     saveHistory(sessionId, history);
 
     saveMessage(sessionId, 'user',      message.trim());
@@ -384,6 +392,27 @@ app.post('/chat', async (req, res) => {
     res.end();
   } finally {
     clearInterval(heartbeat);
+  }
+});
+
+// ── POST /code — two-step coding agent ──────────────────────────
+app.post('/code', async (req, res) => {
+  const { task } = req.body;
+  if (!task || typeof task !== 'string' || !task.trim()) {
+    return res.status(400).json({ error: 'task is required' });
+  }
+  res.setHeader('Content-Type',      'text/event-stream');
+  res.setHeader('Cache-Control',     'no-cache');
+  res.setHeader('Connection',        'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const hb = setInterval(() => res.write(': ping\n\n'), 20000);
+  res.on('close', () => clearInterval(hb));
+  try {
+    await runCodeAgent(task.trim(), send);
+  } finally {
+    clearInterval(hb);
+    res.end();
   }
 });
 
