@@ -1,6 +1,8 @@
 import client from './openrouter.js';
 import { runCode, writeWorkspaceFile } from './tools/runner.js';
 
+const MAX_TOKENS = parseInt(process.env.MAX_TOKENS) || 32000;
+
 const ARCHITECT_SYSTEM = `You are a senior software architect. Analyze the coding task and produce a precise implementation plan.
 Output ONLY valid JSON, no markdown, no explanation:
 {"plan": ["step 1", "step 2", ...], "risks": ["risk 1", ...], "files_to_modify": ["file1", ...], "language": "js|python|bash"}
@@ -22,6 +24,7 @@ const MAX_ITERATIONS = 3;
 async function runArchitect(task) {
   const completion = await client.chat.completions.create({
     model: 'deepseek/deepseek-v4-pro',
+    max_tokens: MAX_TOKENS,
     messages: [
       { role: 'system', content: ARCHITECT_SYSTEM },
       { role: 'user',   content: task },
@@ -50,6 +53,7 @@ async function generateCode(task, plan, previousCode = null, error = null) {
   const stream = await client.chat.completions.create({
     model: 'anthropic/claude-sonnet-4-6',
     stream: true,
+    max_tokens: MAX_TOKENS,
     messages: [
       { role: 'system', content: previousCode ? FIXER_SYSTEM : CODER_SYSTEM },
       { role: 'user',   content: userMsg },
