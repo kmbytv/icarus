@@ -36,7 +36,9 @@
     "The files include a GitHub workflow, a smoke test file, and an updated package.json.",
     "Railway supports GitHub Deployments integration.",
     "Enabling 'Wait for CI' in Railway settings makes it wait for tests before deploying.",
-    "Deployment is skipped if tests fail."
+    "Deployment is skipped if tests fail.",
+    "npm ci failed with exit code 1 on Railway.",
+    "The package-lock.json in server/ was not updated after adding vitest."
   ],
-  "updated_at": "2026-06-07T09:36:21.518Z"
+  "updated_at": "2026-06-07T09:58:40.308Z"
 }
