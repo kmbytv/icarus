@@ -216,7 +216,8 @@ app.post('/chat', async (req, res) => {
       saveMessage(sessionId, 'user',      message.trim());
       saveMessage(sessionId, 'assistant', '[code agent]');
 
-      extractAndSaveFacts(sessionId, message.trim(), '[code agent]', process.env.OPENROUTER_API_KEY);
+      extractAndSaveFacts(sessionId, message.trim(), '[code agent]', process.env.OPENROUTER_API_KEY)
+        .catch(e => console.error('[memory] background save failed:', e.message));
 
       send({ type: 'done' });
       return res.end();
@@ -468,7 +469,8 @@ app.post('/chat', async (req, res) => {
     saveMessage(sessionId, 'assistant', fullAssistantText);
 
     // Fire-and-forget: extract and persist facts from this conversation turn
-    extractAndSaveFacts(sessionId, message.trim(), textOnlyAssistant, process.env.OPENROUTER_API_KEY);
+    extractAndSaveFacts(sessionId, message.trim(), textOnlyAssistant, process.env.OPENROUTER_API_KEY)
+      .catch(e => console.error('[memory] background save failed:', e.message));
 
     send({ type: 'done' });
     res.end();

@@ -14,6 +14,7 @@ function octokit() {
 
 // In-memory cache
 let _cache = { facts: [], sha: null };
+let _writing = false; // simple lock to prevent SHA conflicts on concurrent writes
 
 export async function loadMemory() {
   try {
@@ -93,6 +94,11 @@ Assistant: ${assistantMsg.slice(0, 500)}`;
       console.log('[memory] GITHUB_TOKEN not set, skipping write');
       return;
     }
+    if (_writing) {
+      console.log('[memory] write in progress, skipping to avoid SHA conflict');
+      return;
+    }
+    _writing = true;
 
     const fileContent = JSON.stringify({ facts: _cache.facts, updated_at: new Date().toISOString() }, null, 2);
     const encoded = Buffer.from(fileContent, 'utf8').toString('base64');
@@ -109,5 +115,7 @@ Assistant: ${assistantMsg.slice(0, 500)}`;
     console.log(`[memory] saved ${facts.length} fact(s), commit: ${data.commit?.sha?.slice(0, 8)}`);
   } catch (err) {
     console.error('[memory] extractAndSaveFacts error:', err.message);
+  } finally {
+    _writing = false;
   }
 }
