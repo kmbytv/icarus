@@ -17,7 +17,7 @@ Do not include explanations outside the code — use comments inside the code fo
 async function runArchitect(task) {
   console.log('[code-agent] architect step starting');
   const completion = await client.chat.completions.create({
-    model: 'deepseek/deepseek-r1',
+    model: 'deepseek/deepseek-v3.2',
     messages: [
       { role: 'system', content: PLANNER_SYSTEM },
       { role: 'user',   content: task },
