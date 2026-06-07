@@ -118,6 +118,20 @@ function saveHistory(sessionId, history) {
   writeJSON(`session_${sessionId}.json`, history);
 }
 
+// ── Retry wrapper for flaky network tools ───────────────────────
+async function withRetry(fn, { attempts = 3, baseDelayMs = 800 } = {}) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, baseDelayMs * 2 ** i));
+    }
+  }
+  throw lastErr;
+}
+
 // ── Tool call parser ────────────────────────────────────────────
 function parseToolCall(line) {
   const trimmed = line.trim();
@@ -444,15 +458,15 @@ app.post('/chat', async (req, res) => {
       let   toolOk    = true;
       try {
         switch (toolCall.toolName) {
-          case 'web_search':        result = await webSearch(toolCall.args.query, { numResults: toolCall.args.numResults }); break;
-          case 'web_fetch':         result = await webFetch(toolCall.args.url);                                              break;
-          case 'get_codebase':        result = { snapshot: getCodebase() };                                                          break;
-          case 'github_read_file':    result = await githubReadFile(toolCall.args.path);                                             break;
-          case 'github_write_file':   result = await githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message); break;
-          case 'github_list_files':   result = await githubListFiles(toolCall.args.dir_path);                                          break;
-          case 'github_check_access': result = await githubCheckAccess();                                                              break;
-          case 'get_weather':       result = await getWeather(toolCall.args.city, toolCall.args.units);                      break;
-          case 'code_run':          result = await runCode(toolCall.args);                                                    break;
+          case 'web_search':          result = await withRetry(() => webSearch(toolCall.args.query, { numResults: toolCall.args.numResults })); break;
+          case 'web_fetch':           result = await withRetry(() => webFetch(toolCall.args.url));                                             break;
+          case 'get_codebase':        result = { snapshot: getCodebase() };                                                                    break;
+          case 'github_read_file':    result = await withRetry(() => githubReadFile(toolCall.args.path));                                      break;
+          case 'github_write_file':   result = await withRetry(() => githubWriteFile(toolCall.args.path, toolCall.args.content, toolCall.args.message)); break;
+          case 'github_list_files':   result = await withRetry(() => githubListFiles(toolCall.args.dir_path));                                 break;
+          case 'github_check_access': result = await withRetry(() => githubCheckAccess());                                                     break;
+          case 'get_weather':         result = await withRetry(() => getWeather(toolCall.args.city, toolCall.args.units));                     break;
+          case 'code_run':            result = await runCode(toolCall.args);                                                                    break;
           default:
             if (isComposioTool(toolCall.toolName)) {
               const actionName = toolCall.toolName.replace('composio__', '');
